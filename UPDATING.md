@@ -59,6 +59,16 @@ Both default to empty (no behavior change). They apply to both the `LOCAL_EXTENS
 
 The Dynamic Group By chart customization now orders its display values according to the "Sort display control values" toggle: ascending (A–Z), descending (Z–A), or the dataset's source order when the toggle is unset. Previously the dropdown always sorted alphabetically. Existing dashboards where the toggle was never set will show options in source order instead of A–Z; open the customization and enable the toggle to restore alphabetical ordering.
 
+### Slack v1 deprecated; `ALERT_REPORT_SLACK_V2` defaults to `True`
+
+The legacy Slack integration for Alerts and Reports (`Slack` recipient type, `files.upload` API) is deprecated and will be removed in the next major release. The `ALERT_REPORT_SLACK_V2` feature flag now defaults to `True`.
+
+**Why this is changing:** Slack retired the `files.upload` endpoint in 2025, so v1 sends that include screenshots, CSVs, or PDFs already fail at the API level. Only text-only `chat_postMessage` sends still succeed via the legacy path. The v2 integration uses `files_upload_v2` and stores stable channel IDs instead of mutable channel names.
+
+**Operator action required:** Grant your Slack bot the `channels:read` scope (and `groups:read` if you use private channels). With that scope in place, existing `Slack` recipients are auto-upgraded to `SlackV2` on their next successful send — channel names are resolved to channel IDs and the recipient row is rewritten in place. Recipients whose channels can't be resolved will continue to send via the v1 `chat_postMessage` path for text-only alerts until v1 is removed.
+
+**If you previously set `ALERT_REPORT_SLACK_V2: False` explicitly:** you'll see a one-shot `DeprecationWarning` and a `logger.warning` describing the action above. To suppress, remove the override or grant the scope and let the auto-upgrade run.
+
 ### Granular Export Controls
 
 A new feature flag `GRANULAR_EXPORT_CONTROLS` introduces three fine-grained permissions that replace the legacy `can_csv` permission:
