@@ -16,17 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { IconTooltip, List } from '@superset-ui/core/components';
 import { nanoid } from 'nanoid';
 import { t } from '@apache-superset/core/translation';
 import { useTheme, type SupersetTheme } from '@apache-superset/core/theme';
 import {
-  SortableContainer,
-  SortableHandle,
-  SortableElement,
+  DndContext,
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
   arrayMove,
-} from 'react-sortable-hoc';
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Icons } from '@superset-ui/core/components/Icons';
 import {
   HeaderContainer,
@@ -41,7 +50,7 @@ interface CollectionItem {
   [key: string]: unknown;
 }
 
-interface CollectionControlProps {
+export interface CollectionControlProps {
   name: string;
   label?: string | null;
   description?: string | null;
@@ -56,21 +65,105 @@ interface CollectionControlProps {
   controlName: string;
 }
 
-const SortableListItem = SortableElement(CustomListItem);
-const SortableList = SortableContainer(List);
-const SortableDragger = SortableHandle(() => (
-  <Icons.MenuOutlined
-    role="img"
-    aria-label={t('Drag to reorder')}
-    className="text-primary"
-    style={{ cursor: 'ns-resize' }}
-  />
-));
+function DragHandle() {
+  return (
+    <Icons.MenuOutlined
+      role="img"
+      aria-label={t('Drag to reorder')}
+      className="text-primary"
+      style={{ cursor: 'ns-resize' }}
+    />
+  );
+}
 
-const defaultItemGenerator = () => ({ key: nanoid(11) });
+interface SortableItemProps {
+  id: string;
+  index: number;
+  item: CollectionItem;
+  controlProps: Omit<CollectionControlProps, 'label'>;
+  onChangeItem: (index: number, value: CollectionItem) => void;
+  onRemoveItem: (index: number) => void;
+}
+
+function SortableItem({
+  id,
+  index,
+  item,
+  controlProps,
+  onChangeItem,
+  onRemoveItem,
+}: SortableItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+  };
+  const Control = (controlMap as Record<string, React.ComponentType<any>>)[
+    controlProps.controlName
+  ];
+
+  return (
+    <CustomListItem
+      ref={setNodeRef}
+      style={style}
+      selectable={false}
+      className="clearfix"
+      css={(theme: SupersetTheme) => ({
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        display: 'flex',
+        paddingInline: theme.sizeUnit * 6,
+      })}
+    >
+      <span {...attributes} {...listeners}>
+        <DragHandle />
+      </span>
+      <div
+        css={(theme: SupersetTheme) => ({
+          flex: 1,
+          marginLeft: theme.sizeUnit * 2,
+          marginRight: theme.sizeUnit * 2,
+        })}
+      >
+        <Control
+          {...controlProps}
+          {...item}
+          onChange={(value: CollectionItem) => onChangeItem(index, value)}
+        />
+      </div>
+      <IconTooltip
+        className="pointer"
+        placement="right"
+        onClick={() => onRemoveItem(index)}
+        tooltip={t('Remove item')}
+        mouseEnterDelay={0}
+        mouseLeaveDelay={0}
+        css={(theme: SupersetTheme) => ({
+          padding: 0,
+          minWidth: 'auto',
+          height: 'auto',
+          lineHeight: 1,
+          cursor: 'pointer',
+          '& svg path': {
+            fill: theme.colorIcon,
+            transition: `fill ${theme.motionDurationMid} ease-out`,
+          },
+          '&:hover svg path': {
+            fill: theme.colorError,
+          },
+        })}
+      >
+        <Icons.CloseOutlined iconSize="s" />
+      </IconTooltip>
+    </CustomListItem>
+  );
+}
+
 const defaultKeyAccessor = (o: CollectionItem) => o.key ?? '';
+const defaultItemGenerator = () => ({ key: nanoid(11) });
 
-export default function CollectionControl({
+function CollectionControl({
   name,
   label = null,
   description = null,
@@ -78,142 +171,148 @@ export default function CollectionControl({
   addTooltip = t('Add an item'),
   itemGenerator = defaultItemGenerator,
   keyAccessor = defaultKeyAccessor,
-  onChange = () => {},
+  onChange,
   value = [],
   isFloat,
   isInt,
   controlName,
-  ...headerProps
-}: CollectionControlProps & { [key: string]: unknown }) {
+}: CollectionControlProps) {
   const theme = useTheme();
 
-  const handleChange = useCallback(
-    (i: number, itemValue: CollectionItem) => {
-      const newValue = [...value];
-      newValue[i] = { ...value[i], ...itemValue };
-      onChange(newValue);
-    },
-    [value, onChange],
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
   );
 
-  const handleAdd = useCallback(() => {
+  // Two items can collide when keyAccessor returns falsy and the index
+  // fallback is used — breaking dnd-kit reordering and React reconciliation.
+  // Assign a stable nanoid per item ref when no key is available.
+  const generatedIdsRef = useRef<WeakMap<CollectionItem, string>>(new WeakMap());
+  const itemIds = useMemo(
+    () =>
+      value.map(item => {
+        const accessed = keyAccessor(item);
+        if (accessed) return accessed;
+        let id = generatedIdsRef.current.get(item);
+        if (!id) {
+          id = nanoid(11);
+          generatedIdsRef.current.set(item, id);
+        }
+        return id;
+      }),
+    [value, keyAccessor],
+  );
+
+  const onAdd = useCallback(() => {
     const newItem = itemGenerator();
-    // Cast needed: original JS allowed undefined items from itemGenerator
-    onChange(value.concat([newItem] as unknown as CollectionItem[]));
-  }, [value, onChange, itemGenerator]);
+    onChange?.(value.concat([newItem] as unknown as CollectionItem[]));
+  }, [value, itemGenerator, onChange]);
 
-  const handleSortEnd = useCallback(
-    ({ oldIndex, newIndex }: { oldIndex: number; newIndex: number }) => {
-      onChange(arrayMove(value, oldIndex, newIndex));
+  const onChangeItem = useCallback(
+    (i: number, itemValue: CollectionItem) => {
+      const oldItem = value[i];
+      const newItem = { ...oldItem, ...itemValue };
+      // Replacing the object would orphan the WeakMap-stored id and remount
+      // the row. Carry the generated id over to the new ref.
+      const generatedId = generatedIdsRef.current.get(oldItem);
+      if (generatedId) {
+        generatedIdsRef.current.set(newItem, generatedId);
+      }
+      const newValue = [...value];
+      newValue[i] = newItem;
+      onChange?.(newValue);
     },
     [value, onChange],
   );
 
-  const removeItem = useCallback(
+  const onRemoveItem = useCallback(
     (i: number) => {
-      onChange(value.filter((o, ix) => i !== ix));
+      onChange?.(value.filter((_, ix) => i !== ix));
     },
     [value, onChange],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = itemIds.indexOf(String(active.id));
+        const newIndex = itemIds.indexOf(String(over.id));
+        onChange?.(arrayMove(value, oldIndex, newIndex));
+      }
+    },
+    [value, itemIds, onChange],
+  );
+
+  const controlProps = useMemo(
+    () => ({
+      name,
+      description,
+      placeholder,
+      addTooltip,
+      itemGenerator,
+      keyAccessor,
+      onChange,
+      value,
+      isFloat,
+      isInt,
+      controlName,
+    }),
+    [
+      name,
+      description,
+      placeholder,
+      addTooltip,
+      itemGenerator,
+      keyAccessor,
+      onChange,
+      value,
+      isFloat,
+      isInt,
+      controlName,
+    ],
   );
 
   const renderList = () => {
     if (value.length === 0) {
       return <div className="text-muted">{placeholder}</div>;
     }
-    const Control = (controlMap as Record<string, React.ComponentType<any>>)[
-      controlName
-    ];
     return (
-      <SortableList
-        useDragHandle
-        lockAxis="y"
-        onSortEnd={handleSortEnd}
-        bordered
-        css={(themeArg: SupersetTheme) => ({
-          borderRadius: themeArg.borderRadius,
-        })}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        {value.map((o: CollectionItem, i: number) => (
-          <SortableListItem
-            selectable={false}
-            className="clearfix"
-            css={(themeArg: SupersetTheme) => ({
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              display: 'flex',
-              paddingInline: themeArg.sizeUnit * 6,
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          <List
+            bordered
+            css={(theme: SupersetTheme) => ({
+              borderRadius: theme.borderRadius,
             })}
-            key={keyAccessor(o)}
-            index={i}
           >
-            <SortableDragger />
-            <div
-              css={(themeArg: SupersetTheme) => ({
-                flex: 1,
-                marginLeft: themeArg.sizeUnit * 2,
-                marginRight: themeArg.sizeUnit * 2,
-              })}
-            >
-              <Control
-                name={name}
-                description={description}
-                placeholder={placeholder}
-                addTooltip={addTooltip}
-                itemGenerator={itemGenerator}
-                keyAccessor={keyAccessor}
-                value={value}
-                isFloat={isFloat}
-                isInt={isInt}
-                controlName={controlName}
-                {...o}
-                onChange={(itemValue: CollectionItem) =>
-                  handleChange(i, itemValue)
-                }
+            {value.map((item, i) => (
+              <SortableItem
+                key={itemIds[i]}
+                id={itemIds[i]}
+                index={i}
+                item={item}
+                controlProps={controlProps}
+                onChangeItem={onChangeItem}
+                onRemoveItem={onRemoveItem}
               />
-            </div>
-            <IconTooltip
-              className="pointer"
-              placement="right"
-              onClick={() => removeItem(i)}
-              tooltip={t('Remove item')}
-              mouseEnterDelay={0}
-              mouseLeaveDelay={0}
-              css={(themeArg: SupersetTheme) => ({
-                padding: 0,
-                minWidth: 'auto',
-                height: 'auto',
-                lineHeight: 1,
-                cursor: 'pointer',
-                '& svg path': {
-                  fill: themeArg.colorIcon,
-                  transition: `fill ${themeArg.motionDurationMid} ease-out`,
-                },
-                '&:hover svg path': {
-                  fill: themeArg.colorError,
-                },
-              })}
-            >
-              <Icons.CloseOutlined iconSize="s" />
-            </IconTooltip>
-          </SortableListItem>
-        ))}
-      </SortableList>
+            ))}
+          </List>
+        </SortableContext>
+      </DndContext>
     );
-  };
-
-  // Props for ControlHeader, including any header-related props passed from the parent
-  const controlHeaderProps = {
-    name,
-    label,
-    description,
-    ...headerProps,
   };
 
   return (
     <div data-test="CollectionControl" className="CollectionControl">
       <HeaderContainer>
-        <ControlHeader {...controlHeaderProps} />
-        <AddIconButton onClick={handleAdd}>
+        <ControlHeader name={name} label={label} description={description} />
+        <AddIconButton onClick={onAdd}>
           <Icons.PlusOutlined
             iconSize="s"
             iconColor={theme.colorTextLightSolid}
@@ -224,3 +323,5 @@ export default function CollectionControl({
     </div>
   );
 }
+
+export default CollectionControl;
