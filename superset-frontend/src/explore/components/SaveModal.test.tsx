@@ -410,18 +410,6 @@ test('createRedirectParams removes form_data_key from URL parameters', () => {
   expect(result.get('save_action')).toEqual('overwrite');
 });
 
-/**
- * TODO: This test was written for the class component version of SaveModal.
- * Since SaveModal has been converted to a function component, this test
- * needs to be rewritten to test through component rendering and user interaction.
- * The test should verify that clicking "Save & go to dashboard" dispatches
- * removeChartState with the correct chart ID.
- */
-test('dispatches removeChartState when saving and going to dashboard - placeholder', () => {
-  // See TODO comment above
-  expect(true).toBe(true);
-});
-
 test('disables tab selector when no dashboard selected', () => {
   const { getByRole, getByTestId } = setup();
   fireEvent.click(getByRole('radio', { name: 'Save as...' }));
@@ -438,28 +426,6 @@ test('renders tab selector when saving as', async () => {
   const tabSelector = getByTestId('mock-tree-select');
   expect(tabSelector).toBeInTheDocument();
   expect(tabSelector).toBeDisabled();
-});
-
-/**
- * TODO: This test was written for the class component version of SaveModal.
- * Since SaveModal has been converted to a function component, this test
- * needs to be rewritten to test through component rendering and user interaction.
- * The test should verify that selecting a dashboard triggers tab loading.
- */
-test('onDashboardChange triggers tabs load for existing dashboard - placeholder', () => {
-  // See TODO comment above
-  expect(true).toBe(true);
-});
-
-/**
- * TODO: This test was written for the class component version of SaveModal.
- * Since SaveModal has been converted to a function component, this test
- * needs to be rewritten to test through component rendering and user interaction.
- * The test should verify that changing the tab selection updates the component state.
- */
-test('onTabChange correctly updates selectedTab - placeholder', () => {
-  // See TODO comment above
-  expect(true).toBe(true);
 });
 
 test('chart placement logic finds row with available space', () => {
