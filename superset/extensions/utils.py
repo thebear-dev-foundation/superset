@@ -35,7 +35,7 @@ from superset.utils.core import check_is_safe_zip
 
 logger = logging.getLogger(__name__)
 
-FRONTEND_REGEX = re.compile(r"^frontend/dist/([^/]+)$")
+FRONTEND_REGEX = re.compile(r"^frontend/dist/(.+)$")
 BACKEND_REGEX = re.compile(r"^backend/src/(.+)$")
 
 
