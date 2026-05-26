@@ -30,21 +30,26 @@ export const extensions: typeof extensionsApi = {
   getAllExtensions,
 };
 
-type ExtensionSettings = {
-  active_chatbot_id: string | null;
-  enabled: Record<string, boolean>;
+// Pub/sub for admin extension settings changes. Allows components like
+// ChatbotMount to react when ExtensionsList persists a new settings payload,
+// without coupling them through Redux or a shared API hook.
+type SettingsListener = () => void;
+const settingsListeners = new Set<SettingsListener>();
+
+/**
+ * Notify all subscribers that extension settings have changed.
+ * Call this after a successful PUT /api/v1/extensions/settings.
+ */
+export const notifyExtensionSettingsChanged = (): void => {
+  settingsListeners.forEach(fn => fn());
 };
 
-const settingsListeners = new Set<(settings: ExtensionSettings) => void>();
-
-export const notifyExtensionSettingsChanged = (
-  settings: ExtensionSettings,
-): void => {
-  settingsListeners.forEach(fn => fn(settings));
-};
-
+/**
+ * Subscribe to extension settings changes.
+ * Returns an unsubscribe function.
+ */
 export const subscribeToExtensionSettings = (
-  listener: (settings: ExtensionSettings) => void,
+  listener: SettingsListener,
 ): (() => void) => {
   settingsListeners.add(listener);
   return () => settingsListeners.delete(listener);
