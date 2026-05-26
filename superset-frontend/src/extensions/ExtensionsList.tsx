@@ -34,6 +34,9 @@ import withToasts from 'src/components/MessageToasts/withToasts';
 import { ConfirmStatusChange, Tooltip } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { notifyExtensionSettingsChanged } from 'src/core/extensions';
+import { getRegisteredViewIds, subscribeToLocation } from 'src/core/views';
+
+const CHATBOT_LOCATION = 'superset.chatbot';
 
 const PAGE_SIZE = 25;
 
@@ -56,6 +59,9 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [activeChatbotId, setActiveChatbotId] = useState<string | null>(null);
+  const [chatbotExtensionIds, setChatbotExtensionIds] = useState<Set<string>>(
+    () => new Set(getRegisteredViewIds(CHATBOT_LOCATION)),
+  );
 
   const {
     state: { loading, resourceCount, resourceCollection },
@@ -65,6 +71,15 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
     'extensions',
     t('Extensions'),
     addDangerToast,
+  );
+
+  // Keep chatbotExtensionIds in sync with runtime view registrations
+  useEffect(
+    () =>
+      subscribeToLocation(CHATBOT_LOCATION, () => {
+        setChatbotExtensionIds(new Set(getRegisteredViewIds(CHATBOT_LOCATION)));
+      }),
+    [],
   );
 
   // Load current active chatbot from settings on mount
@@ -189,31 +204,34 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
         id: 'actions',
         disableSortBy: true,
         Cell: ({ row: { original } }: any) => {
+          const isChatbot = chatbotExtensionIds.has(original.id);
           const isDefault = activeChatbotId === original.id;
           return (
             <>
-              <Tooltip
-                id="set-chatbot-tooltip"
-                title={
-                  isDefault
-                    ? t('Clear default chatbot')
-                    : t('Set as default chatbot')
-                }
-                placement="bottom"
-              >
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="action-button"
-                  onClick={() => handleSetDefaultChatbot(original)}
+              {isChatbot && (
+                <Tooltip
+                  id="set-chatbot-tooltip"
+                  title={
+                    isDefault
+                      ? t('Clear default chatbot')
+                      : t('Set as default chatbot')
+                  }
+                  placement="bottom"
                 >
-                  {isDefault ? (
-                    <Icons.StarFilled iconSize="l" />
-                  ) : (
-                    <Icons.StarOutlined iconSize="l" />
-                  )}
-                </span>
-              </Tooltip>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="action-button"
+                    onClick={() => handleSetDefaultChatbot(original)}
+                  >
+                    {isDefault ? (
+                      <Icons.StarFilled iconSize="l" />
+                    ) : (
+                      <Icons.StarOutlined iconSize="l" />
+                    )}
+                  </span>
+                </Tooltip>
+              )}
               <ConfirmStatusChange
                 title={t('Please confirm')}
                 description={
@@ -246,7 +264,7 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
         },
       },
     ],
-    [loading, activeChatbotId, handleSetDefaultChatbot],
+    [loading, activeChatbotId, chatbotExtensionIds, handleSetDefaultChatbot],
   );
 
   const menuData: SubMenuProps = {
