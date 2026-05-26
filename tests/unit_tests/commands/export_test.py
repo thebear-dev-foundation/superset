@@ -109,7 +109,7 @@ def test_export_assets_command(mocker: MockerFixture) -> None:
     ]
 
 
-@pytest.fixture()
+@pytest.fixture  # noqa: PT001
 def mock_export_tags_command_charts_dashboards(mocker):
     export_tags = mocker.patch("superset.commands.tag.export.ExportTagsCommand")
 
