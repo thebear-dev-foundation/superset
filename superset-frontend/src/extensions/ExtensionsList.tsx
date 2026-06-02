@@ -34,7 +34,7 @@ import withToasts from 'src/components/MessageToasts/withToasts';
 import { ConfirmStatusChange, Tooltip } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { notifyExtensionSettingsChanged } from 'src/core/extensions';
-import { getRegisteredViewIds, subscribeToLocation } from 'src/core/views';
+import { getRegisteredViewIds, subscribeToRegistry } from 'src/core/views';
 
 const CHATBOT_LOCATION = 'superset.chatbot';
 
@@ -76,7 +76,7 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
   // Keep chatbotExtensionIds in sync with runtime view registrations
   useEffect(
     () =>
-      subscribeToLocation(CHATBOT_LOCATION, () => {
+      subscribeToRegistry(() => {
         setChatbotExtensionIds(new Set(getRegisteredViewIds(CHATBOT_LOCATION)));
       }),
     [],
@@ -279,7 +279,12 @@ const ExtensionsList: FunctionComponent<ExtensionsListProps> = ({
         },
       },
     ],
-    [activeChatbotId, chatbotExtensionIds, handleSetDefaultChatbot, handleDelete],
+    [
+      activeChatbotId,
+      chatbotExtensionIds,
+      handleSetDefaultChatbot,
+      handleDelete,
+    ],
   );
 
   const menuData: SubMenuProps = {
