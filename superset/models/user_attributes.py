@@ -16,7 +16,7 @@
 # under the License.
 
 from flask_appbuilder import Model
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from superset import security_manager
@@ -42,3 +42,7 @@ class UserAttribute(Model, AuditMixinNullable):
     welcome_dashboard_id = Column(Integer, ForeignKey("dashboards.id"))
     welcome_dashboard = relationship("Dashboard")
     avatar_url = Column(String(100))
+    # When True, the user must change their password before they can use the
+    # rest of the app (enforced by the before-request hook in
+    # superset.security.password_change when ENABLE_FORCE_PASSWORD_CHANGE is on).
+    password_must_change = Column(Boolean, nullable=False, default=False)
