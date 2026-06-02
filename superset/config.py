@@ -168,6 +168,11 @@ NATIVE_FILTER_DEFAULT_ROW_LIMIT = 1000
 # max rows retrieved by filter select auto complete
 FILTER_SELECT_ROW_LIMIT = 10000
 
+# Upper bound on the page size accepted by the generic DAO list/pagination layer.
+# Caps how many rows a single paginated query can request, regardless of the
+# requested page size, to keep query result sets bounded.
+SQLALCHEMY_DAO_MAX_PAGE_SIZE = 1000
+
 # SupersetClient HTTP retry configuration
 # Controls retry behavior for all HTTP requests made through SupersetClient
 # This helps handle transient server errors (like 502 Bad Gateway) automatically
