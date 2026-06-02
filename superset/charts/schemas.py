@@ -666,6 +666,7 @@ class ChartDataProphetOptionsSchema(ChartDataPostProcessingOperationOptionsSchem
             "the future",
             "example": 7,
             "min": 0,
+            "max": 10000,
         },
         required=True,
         validate=[
