@@ -343,6 +343,20 @@ RATELIMIT_ENABLED = os.environ.get("SUPERSET_ENV") == "production"
 RATELIMIT_APPLICATION = "50 per second"
 AUTH_RATE_LIMITED = True
 AUTH_RATE_LIMIT = "5 per second"
+
+# Password complexity policy, enforced (via Flask-AppBuilder) across
+# self-registration, the user edit/reset forms, and the User REST API.
+# The Superset validator requires a minimum length and rejects common
+# passwords; tune via AUTH_PASSWORD_MIN_LENGTH / AUTH_PASSWORD_COMMON_BLOCKLIST,
+# or replace FAB_PASSWORD_COMPLEXITY_VALIDATOR with your own callable.
+from superset.security.password_complexity import (  # noqa: E402
+    validate_password_complexity as _validate_password_complexity,
+)
+
+FAB_PASSWORD_COMPLEXITY_ENABLED = True
+FAB_PASSWORD_COMPLEXITY_VALIDATOR = _validate_password_complexity
+AUTH_PASSWORD_MIN_LENGTH = 8
+AUTH_PASSWORD_COMMON_BLOCKLIST: list[str] = []
 # A storage location conforming to the scheme in storage-scheme. See the limits
 # library for allowed values: https://limits.readthedocs.io/en/stable/storage.html
 # RATELIMIT_STORAGE_URI = "redis://host:port"
