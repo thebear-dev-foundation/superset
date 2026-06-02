@@ -25,6 +25,7 @@ Provides step-by-step JWT validation with tiered server-side logging:
 HTTP responses always return generic errors per RFC 6750 Section 3.1.
 """
 
+import asyncio
 import base64
 import html as html_module
 import logging
@@ -33,6 +34,7 @@ from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any, cast
 
+import httpx
 from authlib.jose.errors import (
     BadSignatureError,
     DecodeError,
@@ -501,13 +503,31 @@ class DetailedJWTVerifier(MCPJWTVerifier):
                 )
                 return None
 
-            # Step 2: Get verification key (static or JWKS)
+            # Step 2: Get verification key (static or JWKS).
+            #
+            # For remote JWKS the upstream verifier performs a network fetch and
+            # is expected to normalize transport failures (timeouts, connection
+            # errors, non-200 responses, SSRF blocks) into ValueError. We do not
+            # rely on that normalization alone: any retrieval failure — including
+            # a raw httpx error, an asyncio timeout, or an OS-level connection
+            # error that escapes the upstream conversion — must fail CLOSED and
+            # reject the token, never fall through to "skip verification" or a
+            # 500. Catching these here guarantees a fetch failure can never be
+            # treated as a successful (or skipped) signature check.
             try:
                 verification_key = await self._get_verification_key(token)
-            except ValueError as e:
+            except (
+                ValueError,
+                httpx.HTTPError,
+                asyncio.TimeoutError,
+                ConnectionError,
+                OSError,
+            ) as e:
                 reason = "Failed to get verification key"
                 _jwt_failure_reason.set(reason)
-                logger.debug("Failed to get verification key: %s", e)
+                logger.debug(
+                    "Failed to get verification key (%s): %s", type(e).__name__, e
+                )
                 return None
 
             # Step 3: Decode and verify signature
