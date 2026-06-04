@@ -34,6 +34,7 @@ The mechanism is inert until an epoch is set: users that were never disabled
 """
 
 import logging
+import math
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -150,7 +151,16 @@ def invalidate_user_sessions(connection: Any, user_id: int) -> None:
     from superset.models.user_attributes import UserAttribute
 
     table = UserAttribute.__table__
-    now = _utcnow().replace(tzinfo=None)
+    # Round the epoch up to the next whole second. Some backends (e.g. MySQL)
+    # store ``DATETIME`` columns without sub-second precision and truncate the
+    # value; a session that logged in earlier in the same wall-clock second
+    # carries a fractional ``_login_at`` that would otherwise compare as >= the
+    # truncated epoch and survive invalidation. Ceiling the stamp guarantees it
+    # strictly exceeds any login time from the same second.
+    now_epoch = _utcnow().timestamp()
+    now = datetime.fromtimestamp(math.ceil(now_epoch), timezone.utc).replace(
+        tzinfo=None
+    )
 
     def _stamp_existing() -> int:
         return connection.execute(

@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List
@@ -625,10 +626,21 @@ class EmbeddedDashboardDAO(BaseDAO[EmbeddedDashboard]):
         Revoke outstanding guest tokens for this dashboard's embedded
         configuration by stamping ``guest_token_revoked_before`` to now. Guest
         tokens issued before this instant are rejected on their next request.
+
+        The stamp is rounded up to the next whole second. Guest token ``iat``
+        claims are whole seconds, and some backends (e.g. MySQL) store
+        ``DATETIME`` columns without sub-second precision, truncating the
+        revocation instant. Without the ceiling, a token minted in the same
+        wall-clock second as the revoke call would have ``iat`` equal to the
+        truncated stamp and survive the ``iat < revoked_before`` check, leaving
+        an outstanding token unrevoked.
         """
         now = datetime.now(timezone.utc).replace(tzinfo=None)
+        revoked_before = datetime.fromtimestamp(
+            math.ceil(now.replace(tzinfo=timezone.utc).timestamp()), timezone.utc
+        ).replace(tzinfo=None)
         for embedded in dashboard.embedded:
-            embedded.guest_token_revoked_before = now
+            embedded.guest_token_revoked_before = revoked_before
 
     @classmethod
     def create(
