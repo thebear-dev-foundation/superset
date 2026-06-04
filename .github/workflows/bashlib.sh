@@ -377,3 +377,12 @@ monitor_memory() {
     sleep 2
   done
 }
+
+build-embedded-sdk() {
+  cd "$GITHUB_WORKSPACE/superset-embedded-sdk"
+
+  say "::group::Build embedded SDK bundle for E2E tests"
+  npm ci
+  npm run build
+  say "::endgroup::"
+}
