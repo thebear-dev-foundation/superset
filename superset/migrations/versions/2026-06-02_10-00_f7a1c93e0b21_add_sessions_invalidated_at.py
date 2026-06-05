@@ -42,6 +42,9 @@ INDEX = "ix_user_attribute_sessions_invalidated_at"
 UQ = "uq_user_attribute_user_id"
 
 
+MERGE_COLUMNS = ("avatar_url", "welcome_dashboard_id", "sessions_invalidated_at")
+
+
 def upgrade():
     add_columns(TABLE, sa.Column(COLUMN, sa.DateTime(), nullable=True))
     create_index(TABLE, INDEX, [COLUMN])
@@ -50,33 +53,63 @@ def upgrade():
     # upsert is race-safe. Collapse any pre-existing duplicates into the lowest
     # ``id`` per user before adding the unique constraint.
     #
-    # Merge the data-carrying columns into the kept row first so settings stored
-    # only on a higher-``id`` duplicate are not silently lost. Each kept row
-    # backfills its NULL columns from any duplicate sibling that has a value.
-    for column in ("avatar_url", "welcome_dashboard_id", "sessions_invalidated_at"):
-        op.execute(
-            f"UPDATE {TABLE} SET {column} = ("  # noqa: S608
-            f"SELECT dup.{column} FROM {TABLE} AS dup "
-            f"WHERE dup.user_id = {TABLE}.user_id "
-            f"AND dup.{column} IS NOT NULL "
-            f"ORDER BY dup.id LIMIT 1) "
-            f"WHERE {TABLE}.{column} IS NULL "
-            f"AND {TABLE}.id IN (SELECT MIN(id) FROM {TABLE} GROUP BY user_id) "
-            f"AND EXISTS (SELECT 1 FROM {TABLE} AS dup "
-            f"WHERE dup.user_id = {TABLE}.user_id "
-            f"AND dup.id <> {TABLE}.id "
-            f"AND dup.{column} IS NOT NULL)"
-        )
-    # Drop the now-redundant duplicate rows, keeping the lowest ``id`` per user.
-    op.execute(
-        f"DELETE FROM {TABLE} WHERE id NOT IN "  # noqa: S608
-        f"(SELECT min_id FROM (SELECT MIN(id) AS min_id FROM {TABLE} "
-        f"GROUP BY user_id) AS keep)"
-    )
+    # The merge/de-dup is driven in Python rather than via correlated subqueries:
+    # MySQL forbids referencing the UPDATE/DELETE target table in a subquery
+    # (error 1093), so a portable SQL form is awkward. Reading the duplicate rows
+    # and resolving the winner in Python works identically on SQLite/MySQL/Postgres.
+    _dedupe_user_attributes()
     # SQLite has no ALTER ... ADD CONSTRAINT, so use batch mode (copy-and-move)
     # which all dialects support.
     with op.batch_alter_table(TABLE) as batch_op:
         batch_op.create_unique_constraint(UQ, ["user_id"])
+
+
+def _dedupe_user_attributes():
+    """Collapse duplicate ``user_attribute`` rows into the lowest ``id`` per user.
+
+    Settings stored only on a higher-``id`` duplicate are merged forward into the
+    kept row (the kept row's NULL columns take the lowest-``id`` non-NULL sibling
+    value) so nothing is silently lost, then the redundant rows are deleted.
+    """
+    bind = op.get_bind()
+    columns = ", ".join(("id", "user_id", *MERGE_COLUMNS))
+    rows = bind.execute(
+        sa.text(f"SELECT {columns} FROM {TABLE} ORDER BY id")  # noqa: S608
+    ).fetchall()
+
+    by_user: dict[int, list] = {}
+    for row in rows:
+        mapping = row._mapping
+        if mapping["user_id"] is None:
+            continue
+        by_user.setdefault(mapping["user_id"], []).append(mapping)
+
+    for user_rows in by_user.values():
+        if len(user_rows) < 2:
+            continue
+        # Rows are ordered by id, so the first is the keeper.
+        keeper = user_rows[0]
+        duplicates = user_rows[1:]
+        updates = {}
+        for column in MERGE_COLUMNS:
+            if keeper[column] is not None:
+                continue
+            for dup in duplicates:
+                if dup[column] is not None:
+                    updates[column] = dup[column]
+                    break
+        if updates:
+            assignments = ", ".join(f"{col} = :{col}" for col in updates)
+            bind.execute(
+                sa.text(
+                    f"UPDATE {TABLE} SET {assignments} WHERE id = :id"  # noqa: S608
+                ),
+                {**updates, "id": keeper["id"]},
+            )
+        bind.execute(
+            sa.text(f"DELETE FROM {TABLE} WHERE id = :id"),  # noqa: S608
+            [{"id": dup["id"]} for dup in duplicates],
+        )
 
 
 def downgrade():
