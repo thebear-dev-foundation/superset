@@ -47,8 +47,27 @@ def upgrade():
     create_index(TABLE, INDEX, [COLUMN])
     # The model treats ``user_attribute`` as one row per user (all readers use
     # ``extra_attributes[0]``). Enforce that invariant so the session-invalidation
-    # upsert is race-safe. Drop any pre-existing duplicates, keeping the lowest
-    # ``id`` per user, before adding the unique constraint.
+    # upsert is race-safe. Collapse any pre-existing duplicates into the lowest
+    # ``id`` per user before adding the unique constraint.
+    #
+    # Merge the data-carrying columns into the kept row first so settings stored
+    # only on a higher-``id`` duplicate are not silently lost. Each kept row
+    # backfills its NULL columns from any duplicate sibling that has a value.
+    for column in ("avatar_url", "welcome_dashboard_id", "sessions_invalidated_at"):
+        op.execute(
+            f"UPDATE {TABLE} SET {column} = ("  # noqa: S608
+            f"SELECT dup.{column} FROM {TABLE} AS dup "
+            f"WHERE dup.user_id = {TABLE}.user_id "
+            f"AND dup.{column} IS NOT NULL "
+            f"ORDER BY dup.id LIMIT 1) "
+            f"WHERE {TABLE}.{column} IS NULL "
+            f"AND {TABLE}.id IN (SELECT MIN(id) FROM {TABLE} GROUP BY user_id) "
+            f"AND EXISTS (SELECT 1 FROM {TABLE} AS dup "
+            f"WHERE dup.user_id = {TABLE}.user_id "
+            f"AND dup.id <> {TABLE}.id "
+            f"AND dup.{column} IS NOT NULL)"
+        )
+    # Drop the now-redundant duplicate rows, keeping the lowest ``id`` per user.
     op.execute(
         f"DELETE FROM {TABLE} WHERE id NOT IN "  # noqa: S608
         f"(SELECT min_id FROM (SELECT MIN(id) AS min_id FROM {TABLE} "
