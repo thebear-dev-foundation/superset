@@ -61,8 +61,9 @@ class TestSessionInvalidation(SupersetTestCase):
         assert attribute is not None
         assert attribute.sessions_invalidated_at is not None
 
-        # ...so the previously-authenticated session is now forced out.
-        assert self.client.get("/api/v1/me/").status_code != 200
+        # ...so the previously-authenticated session is now forced out. The
+        # hook clears the session and the protected REST route answers 401.
+        assert self.client.get("/api/v1/me/").status_code == 401
 
     def test_active_user_session_is_unaffected(self) -> None:
         """A user who was never disabled (NULL epoch) is never logged out."""
