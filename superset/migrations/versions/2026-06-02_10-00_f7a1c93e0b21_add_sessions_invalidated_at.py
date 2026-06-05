@@ -22,6 +22,8 @@ Create Date: 2026-06-02 10:00:00.000000
 
 """
 
+from datetime import datetime, timezone
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -62,6 +64,12 @@ def upgrade():
     # which all dialects support.
     with op.batch_alter_table(TABLE) as batch_op:
         batch_op.create_unique_constraint(UQ, ["user_id"])
+    # Backfill an epoch for accounts that are already disabled at upgrade time.
+    # Without this, a user disabled before this lands and later re-enabled would
+    # have no epoch, so a pre-existing session (which also carries no recorded
+    # login time) would silently revive. Stamping the epoch now means any such
+    # outstanding session is treated as invalidated.
+    _backfill_disabled_users()
 
 
 def _dedupe_user_attributes():
@@ -110,6 +118,56 @@ def _dedupe_user_attributes():
             sa.text(f"DELETE FROM {TABLE} WHERE id = :id"),  # noqa: S608
             [{"id": dup["id"]} for dup in duplicates],
         )
+
+
+def _backfill_disabled_users():
+    """Stamp the invalidation epoch for users that are already disabled.
+
+    Upserts one ``user_attribute`` row per disabled user (``ab_user.active`` is
+    false) that has no epoch yet, so re-enabling such an account does not revive
+    a session that predates this feature. Done in Python to stay portable across
+    SQLite/MySQL/Postgres; the unique constraint added above guarantees one row
+    per user, so the insert path cannot create duplicates.
+    """
+    bind = op.get_bind()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # FAB stores ``active`` as a boolean/tinyint; some legacy rows leave it NULL,
+    # which is not "explicitly disabled", so only match a false value.
+    disabled_user_ids = [
+        row._mapping["id"]
+        for row in bind.execute(
+            sa.text("SELECT id FROM ab_user WHERE active = :inactive"),
+            {"inactive": False},
+        ).fetchall()
+    ]
+    if not disabled_user_ids:
+        return
+
+    existing = {
+        row._mapping["user_id"]
+        for row in bind.execute(
+            sa.text(f"SELECT user_id FROM {TABLE}")  # noqa: S608
+        ).fetchall()
+    }
+
+    for user_id in disabled_user_ids:
+        if user_id in existing:
+            bind.execute(
+                sa.text(
+                    f"UPDATE {TABLE} SET {COLUMN} = :now, changed_on = :now "  # noqa: S608, E501
+                    f"WHERE user_id = :user_id AND {COLUMN} IS NULL"
+                ),
+                {"now": now, "user_id": user_id},
+            )
+        else:
+            bind.execute(
+                sa.text(
+                    f"INSERT INTO {TABLE} (user_id, {COLUMN}, created_on, changed_on) "  # noqa: S608, E501
+                    "VALUES (:user_id, :now, :now, :now)"
+                ),
+                {"now": now, "user_id": user_id},
+            )
 
 
 def downgrade():
