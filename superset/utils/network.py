@@ -48,4 +48,3 @@ def is_hostname_valid(host: str) -> bool:
         return True
     except socket.gaierror:
         return False
-
