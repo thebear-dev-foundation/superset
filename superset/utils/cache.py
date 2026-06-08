@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Cache utilities for query result storage and HTTP response memoization."""
+
 from __future__ import annotations
 
 import inspect
@@ -40,6 +42,17 @@ logger = logging.getLogger(__name__)
 
 
 def generate_cache_key(values_dict: dict[str, Any], key_prefix: str = "") -> str:
+    """Derive a deterministic cache key by hashing *values_dict*.
+
+    The dict is serialised with :func:`~superset.utils.json.json_int_dttm_ser`
+    and hashed via :func:`~superset.utils.hashing.hash_from_dict`.  An optional
+    *key_prefix* is prepended to namespace keys across different callers.
+
+    :param values_dict: Arbitrary JSON-serialisable mapping whose contents
+        uniquely identify the cached resource.
+    :param key_prefix: String prepended to the hash to partition the key space.
+    :returns: A prefixed hex-digest string suitable for use as a cache key.
+    """
     hash_str = hash_from_dict(values_dict, default=json_int_dttm_ser)
     cache_key = f"{key_prefix}{hash_str}"
 
