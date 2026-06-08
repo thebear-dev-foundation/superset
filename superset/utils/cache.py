@@ -29,6 +29,7 @@ from werkzeug.wrappers import Response
 
 from superset import db
 from superset.constants import CACHE_DISABLED_TIMEOUT
+from superset.exceptions import SupersetSecurityException
 from superset.extensions import cache_manager
 from superset.models.cache import CacheKey
 from superset.utils.cache_manager import configurable_hash_method
@@ -197,7 +198,7 @@ def etag_cache(  # noqa: C901
             if raise_for_access:
                 try:
                     raise_for_access(*args, **kwargs)
-                except Exception:  # noqa: BLE001
+                except SupersetSecurityException:
                     # If there's no access, bypass the cache and let the function
                     # handle the response.
                     logger.debug("Access check failed, bypassing cache")

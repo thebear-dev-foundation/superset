@@ -196,8 +196,12 @@ class AbstractEventLogger(ABC):
                 if actual_user is not None:
                     db.session.add(actual_user)
                     user_id = get_user_id()
-            except Exception as ex:  # noqa: BLE001
-                logging.warning("Failed to add user to db session: %s", ex)
+            except SQLAlchemyError as ex:
+                logging.warning(
+                    "Failed to add user to db session: %s",
+                    ex,
+                    exc_info=True,
+                )
                 user_id = None
         payload = collect_request_payload()
         if object_ref:

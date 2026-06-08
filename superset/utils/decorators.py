@@ -49,6 +49,11 @@ def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
                 app.config["STATS_LOGGER"].gauge(f"{metric_prefix_}.ok", 1)
                 return result
             except Exception as ex:  # noqa: BLE001
+                # catch-all is intentional: wraps arbitrary decorated
+                # functions to record statsd metrics before re-raising.
+                logger.warning(
+                    "Exception in %s", metric_prefix_, exc_info=True
+                )
                 if (
                     hasattr(ex, "status") and ex.status < 500  # pylint: disable=no-member
                 ):
@@ -261,6 +266,13 @@ def transaction(  # pylint: disable=redefined-outer-name
                 db.session.commit()  # pylint: disable=consider-using-transaction
                 return result
             except Exception as ex:  # noqa: BLE001
+                # catch-all is intentional: wraps arbitrary decorated
+                # functions to guarantee session rollback before re-raising.
+                logger.warning(
+                    "Rolling back transaction in %s",
+                    func.__name__,
+                    exc_info=True,
+                )
                 db.session.rollback()  # pylint: disable=consider-using-transaction
 
                 if on_error:

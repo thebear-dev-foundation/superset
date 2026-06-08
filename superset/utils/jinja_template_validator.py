@@ -19,7 +19,7 @@ under the License.
 
 from typing import Any, Dict
 
-from jinja2 import TemplateSyntaxError
+from jinja2 import TemplateError, TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
 from marshmallow import ValidationError
 
@@ -52,7 +52,7 @@ def validate_jinja_template(template_str: str) -> None:
         env.from_string(template_str)
     except TemplateSyntaxError as e:
         raise JinjaValidationError(f"Invalid Jinja2 template syntax: {str(e)}") from e
-    except Exception as e:  # noqa: BLE001
+    except TemplateError as e:
         raise JinjaValidationError(f"Template validation error: {str(e)}") from e
 
 
@@ -129,5 +129,5 @@ def validate_params_json_with_jinja(value: str | None) -> None:
         validate_jinja_template_in_params(params)
     except ValidationError:
         raise
-    except Exception as ex:  # noqa: BLE001
+    except (JinjaValidationError, TypeError, KeyError, AttributeError) as ex:
         raise ValidationError(f"Template validation error: {str(ex)}") from ex
