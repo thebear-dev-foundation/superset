@@ -84,8 +84,19 @@ class EncryptedFieldFactory:
         ]()
 
     def create(
-        self, *args: list[Any], **kwargs: Optional[dict[str, Any]]
+        self, *args: list[Any], **kwargs: dict[str, Any] | None
     ) -> TypeDecorator:
+        """Create an encrypted SQLAlchemy column type via the configured adapter.
+
+        Delegates to the concrete adapter registered through ``init_app`` and
+        tags the resulting type so it can be recognised later by
+        ``created_by_enc_field_factory``.
+
+        :param args: positional arguments forwarded to the adapter
+        :param kwargs: keyword arguments forwarded to the adapter
+        :returns: a tagged ``TypeDecorator`` wrapping the encrypted column
+        :raises Exception: if ``init_app`` has not been called yet
+        """
         if self._concrete_type_adapter:
             adapter = self._concrete_type_adapter.create(self._config, *args, **kwargs)
             setattr(adapter, ENC_ADAPTER_TAG_ATTR_NAME, True)
