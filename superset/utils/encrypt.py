@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from cryptography.fernet import InvalidToken
 from flask import Flask
 from flask_babel import lazy_gettext as _
 from sqlalchemy import (
@@ -246,7 +247,7 @@ class SecretsMigrator:
             # the previous key below — not a condition worth logging.
             try:
                 encrypted_type.process_result_value(raw_value, self._dialect)
-            except (ValueError, TypeError, KeyError):  # decrypt/decode failures
+            except (InvalidToken, ValueError, TypeError, KeyError):  # decrypt/decode failures
                 logger.debug(
                     "Current key cannot decrypt [%s.%s], trying previous key",
                     table_name,
@@ -264,7 +265,7 @@ class SecretsMigrator:
                 unencrypted_value = previous_encrypted_type.process_result_value(
                     raw_value, self._dialect
                 )
-            except (ValueError, TypeError, KeyError) as prev_ex:
+            except (InvalidToken, ValueError, TypeError, KeyError) as prev_ex:
                 logger.error(
                     "Column [%s.%s] cannot be decrypted under the previous"
                     " or current secret key (%s: %s)",
