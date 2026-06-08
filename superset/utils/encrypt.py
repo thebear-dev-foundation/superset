@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Encryption adapters and SECRET_KEY rotation utilities."""
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -85,6 +87,15 @@ class EncryptedFieldFactory:
         self._config: Optional[dict[str, Any]] = None
 
     def init_app(self, app: Flask) -> None:
+        """Bind the factory to a Flask application.
+
+        Reads ``SQLALCHEMY_ENCRYPTED_FIELD_TYPE_ADAPTER`` from the app config
+        and instantiates it as the concrete encryption adapter used by
+        subsequent :meth:`create` calls.
+
+        :param app: The Flask application whose config supplies the adapter
+            class and the ``SECRET_KEY`` used for column encryption.
+        """
         self._config = app.config
         self._concrete_type_adapter = app.config[
             "SQLALCHEMY_ENCRYPTED_FIELD_TYPE_ADAPTER"
