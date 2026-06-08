@@ -736,8 +736,10 @@ class WebDriverSelenium(WebDriverProxy):
                 exc_info=True,
             )
             raise
-        except Exception as ex:  # noqa: BLE001
-            logger.warning("exception in webdriver", exc_info=ex)
+        except Exception:  # noqa: BLE001
+            # catch-all is intentional: safety net after all Selenium-specific
+            # handlers; preserves stack trace for non-driver failures.
+            logger.warning("exception in webdriver", exc_info=True)
             raise
         finally:
             self.destroy(driver, app.config["SCREENSHOT_SELENIUM_RETRIES"])

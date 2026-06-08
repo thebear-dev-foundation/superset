@@ -174,7 +174,8 @@ def refresh_oauth2_token(
             db.session.flush()
             raise
         except Exception:  # noqa: BLE001
-            # non-OAuth related failure, log the exception
+            # non-OAuth related failure — catch-all is intentional since
+            # db_engine_spec implementations may raise arbitrary errors.
             logger.warning(
                 "OAuth2 token refresh failed for user=%s db=%s",
                 user_id,
@@ -316,6 +317,8 @@ def check_for_oauth2(database: Database) -> Iterator[None]:
     try:
         yield
     except Exception as ex:  # noqa: BLE001
+        # catch-all is intentional: needs_oauth2() inspects arbitrary
+        # DB-driver exceptions to decide whether to trigger OAuth2.
         if database.is_oauth2_enabled() and database.db_engine_spec.needs_oauth2(ex):
             database.db_engine_spec.start_oauth2_dance(database)
         raise

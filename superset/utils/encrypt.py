@@ -246,7 +246,7 @@ class SecretsMigrator:
             # the previous key below — not a condition worth logging.
             try:
                 encrypted_type.process_result_value(raw_value, self._dialect)
-            except Exception:  # noqa: BLE001, S110  # pylint: disable=broad-except
+            except (ValueError, TypeError, KeyError):  # decrypt/decode failures
                 logger.debug(
                     "Current key cannot decrypt [%s.%s], trying previous key",
                     table_name,
@@ -264,7 +264,7 @@ class SecretsMigrator:
                 unencrypted_value = previous_encrypted_type.process_result_value(
                     raw_value, self._dialect
                 )
-            except Exception as prev_ex:  # noqa: BLE001  # pylint: disable=broad-except
+            except (ValueError, TypeError, KeyError) as prev_ex:
                 logger.error(
                     "Column [%s.%s] cannot be decrypted under the previous"
                     " or current secret key (%s: %s)",
