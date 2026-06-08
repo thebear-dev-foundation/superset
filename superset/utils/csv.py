@@ -67,7 +67,19 @@ def escape_value(value: str) -> str:
     return value
 
 
-def df_to_escaped_csv(df: pd.DataFrame, **kwargs: Any) -> Any:
+def df_to_escaped_csv(df: pd.DataFrame, **kwargs: Any) -> str | None:
+    """Escape a DataFrame's headers and string values to prevent CSV injection,
+    then serialize to CSV.
+
+    All string cell values and column names are sanitized against formula
+    injection characters before being written.  Keyword arguments are forwarded
+    to :meth:`pandas.DataFrame.to_csv`.
+
+    :param df: The DataFrame to export
+    :param kwargs: Additional keyword arguments passed to ``DataFrame.to_csv``
+    :return: CSV string when no file path is provided, otherwise ``None``
+    """
+
     def escape_values(v: Any) -> Union[str, Any]:
         return escape_value(v) if isinstance(v, str) else v
 

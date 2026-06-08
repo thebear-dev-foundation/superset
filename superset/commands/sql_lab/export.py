@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast, TypedDict
+from typing import cast, TypedDict
 
 import pandas as pd
 from flask import current_app as app
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class SqlExportResult(TypedDict):
     query: Query
     count: int
-    data: list[Any]
+    data: bytes
 
 
 class SqlResultExportCommand(BaseCommand):
@@ -132,6 +132,7 @@ class SqlResultExportCommand(BaseCommand):
 
         # Manual encoding using the specified encoding (default to utf-8 if not set)
         csv_string = csv.df_to_escaped_csv(df, index=False, **app.config["CSV_EXPORT"])
+        assert csv_string is not None
         csv_data = csv_string.encode(app.config["CSV_EXPORT"].get("encoding", "utf-8"))
 
         return {
