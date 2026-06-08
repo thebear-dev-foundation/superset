@@ -14,6 +14,8 @@
 #  KIND, either express or implied.  See the License for the
 #  specific language governing permissions and limitations
 #  under the License.
+"""Helpers for creating, retrieving, and patching Superset database records."""
+
 from __future__ import annotations
 
 import logging
@@ -35,6 +37,18 @@ logger = logging.getLogger(__name__)
 def get_or_create_db(
     database_name: str, sqlalchemy_uri: str, always_create: bool | None = True
 ) -> Database:
+    """Return an existing database record or create a new one.
+
+    Looks up a :class:`~superset.models.core.Database` by *database_name*.
+    When *always_create* is truthy and no matching record exists, a new row is
+    inserted with the given *sqlalchemy_uri*.  If the record already exists but
+    its stored URI differs from *sqlalchemy_uri*, the URI is updated in place.
+
+    :param database_name: Logical name used as the lookup key.
+    :param sqlalchemy_uri: SQLAlchemy connection string to store.
+    :param always_create: Create the record when it is missing (default ``True``).
+    :returns: The matched or newly created ``Database`` instance.
+    """
     # pylint: disable=import-outside-toplevel
     from superset import db
     from superset.models import core as models
