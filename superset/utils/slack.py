@@ -201,7 +201,7 @@ def get_user_avatar(email: str, client: WebClient = None) -> str:
     client = client or get_slack_client()
     try:
         response = client.users_lookupByEmail(email=email)
-    except Exception as ex:
+    except Exception as ex:  # noqa: BLE001
         raise SlackClientError(f"Failed to lookup user by email: {email}") from ex
 
     user = response.data.get("user")

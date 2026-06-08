@@ -240,7 +240,11 @@ class SecretsMigrator:
             try:
                 encrypted_type.process_result_value(raw_value, self._dialect)
             except Exception:  # noqa: BLE001, S110  # pylint: disable=broad-except
-                pass
+                logger.debug(
+                    "Current key cannot decrypt [%s.%s], trying previous key",
+                    table_name,
+                    column_name,
+                )
             else:
                 stats.skipped += 1
                 continue

@@ -151,7 +151,7 @@ def detect_currency(
 
         return None
 
-    except Exception:  # pylint: disable=broad-except
+    except (KeyError, ValueError, TypeError):
         logger.warning(
             "Failed to detect currency for datasource %s",
             datasource_id,

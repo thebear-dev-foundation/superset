@@ -113,7 +113,7 @@ def process_html_links(html_content: str) -> str:
             lambda m: _replace_href(m, base_hosts, redirect_base),
             html_content,
         )
-    except Exception:
+    except (re.error, ValueError):
         logger.warning("Failed to process HTML links", exc_info=True)
         return html_content
 
