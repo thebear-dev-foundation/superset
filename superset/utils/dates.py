@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Date/time conversion helpers for epoch-based timestamps."""
+
 from datetime import datetime
 
 import pytz
@@ -31,4 +33,5 @@ def datetime_to_epoch(dttm: datetime) -> float:
 
 
 def now_as_float() -> float:
+    """Return the current UTC time as milliseconds since the Unix epoch."""
     return datetime_to_epoch(datetime.utcnow())
