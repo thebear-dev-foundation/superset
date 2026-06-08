@@ -234,7 +234,7 @@ def etag_cache(  # noqa: C901
                     f, *key_args, **key_kwargs
                 )
                 response = cache.get(cache_key)
-            except (OSError, ValueError, TypeError):  # noqa: BLE001
+            except (OSError, ValueError, TypeError):
                 if app.debug:
                     raise
                 logger.exception("Exception possibly due to cache backend.")
@@ -279,7 +279,7 @@ def etag_cache(  # noqa: C901
                 # if we have a cache, store the response from the request
                 try:
                     cache.set(cache_key, response, timeout=timeout)
-                except (OSError, ValueError, TypeError):  # noqa: BLE001
+                except (OSError, ValueError, TypeError):
                     if app.debug:
                         raise
                     logger.exception("Exception possibly due to cache backend.")
