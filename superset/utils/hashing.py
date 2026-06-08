@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Helpers for hashing strings and dictionaries with a configurable algorithm."""
+
 from __future__ import annotations
 
 import hashlib
