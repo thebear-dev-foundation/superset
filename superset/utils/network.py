@@ -14,12 +14,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import platform
 import socket
-import subprocess
 
 PORT_TIMEOUT = 5
-PING_TIMEOUT = 5
 
 
 def is_port_open(host: str, port: int) -> bool:
@@ -52,19 +49,3 @@ def is_hostname_valid(host: str) -> bool:
     except socket.gaierror:
         return False
 
-
-def is_host_up(host: str) -> bool:
-    """
-    Ping a host to see if it's up.
-
-    Note that if we don't get a response the host might still be up,
-    since many firewalls block ICMP packets.
-    """
-    param = "-n" if platform.system().lower() == "windows" else "-c"
-    command = ["ping", param, "1", host]
-    try:
-        output = subprocess.call(command, timeout=PING_TIMEOUT)  # noqa: S603
-    except subprocess.TimeoutExpired:
-        return False
-
-    return output == 0
