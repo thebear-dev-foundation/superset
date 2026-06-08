@@ -736,9 +736,7 @@ class WebDriverSelenium(WebDriverProxy):
                 exc_info=True,
             )
             raise
-        except Exception:  # noqa: BLE001
-            # catch-all is intentional: safety net after all Selenium-specific
-            # handlers; preserves stack trace for non-driver failures.
+        except Exception:  # noqa: BLE001 — safety net after Selenium-specific handlers; preserves stack trace for non-driver failures
             logger.warning("exception in webdriver", exc_info=True)
             raise
         finally:
