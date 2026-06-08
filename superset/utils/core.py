@@ -537,40 +537,136 @@ def markdown(raw: str, markup_wrap: bool | None = False) -> str:
 
 
 def sanitize_svg_content(svg_content: str) -> str:
-    """Basic SVG protection - remove obvious XSS vectors, trust admin input otherwise.
+    """Sanitize SVG content using nh3 with an SVG-appropriate allowlist.
 
-    Minimal protection approach that removes scripts and javascript: URLs while
-    preserving all legitimate SVG features. Assumes admin-provided content.
+    Uses nh3 (a Rust-based HTML sanitizer) to parse and filter SVG content,
+    which is robust against entity-encoding bypasses, ``<foreignObject>``
+    injection, and other attacks that defeat regex-based sanitization.
 
     Args:
         svg_content: Raw SVG content string
 
     Returns:
-        str: SVG content with obvious XSS vectors removed
+        str: Sanitized SVG content with only safe elements and attributes
     """
     if not svg_content or not svg_content.strip():
         return ""
 
-    # Minimal protection: remove obvious malicious content, preserve all SVG features
-    content = re.sub(
-        r"<script[^>]*>.*?</script>", "", svg_content, flags=re.IGNORECASE | re.DOTALL
-    )
-    content = re.sub(r"javascript:", "", content, flags=re.IGNORECASE)
-    content = re.sub(r"data:[^;]*;[^,]*,.*javascript", "", content, flags=re.IGNORECASE)
+    safe_svg_tags: set[str] = {
+        "svg",
+        "g",
+        "defs",
+        "symbol",
+        "use",
+        "rect",
+        "circle",
+        "ellipse",
+        "line",
+        "polyline",
+        "polygon",
+        "path",
+        "text",
+        "tspan",
+        "textPath",
+        "clipPath",
+        "mask",
+        "image",
+        "linearGradient",
+        "radialGradient",
+        "stop",
+        "pattern",
+        "filter",
+        "feGaussianBlur",
+        "feOffset",
+        "feBlend",
+        "feMerge",
+        "feMergeNode",
+        "feFlood",
+        "feComposite",
+        "feColorMatrix",
+        "title",
+        "desc",
+        "marker",
+    }
 
-    # Remove event handlers (simple catch-all approach)
-    content = re.sub(r"\bon\w+\s*=", "", content, flags=re.IGNORECASE)
+    safe_svg_attrs: dict[str, set[str]] = {
+        "*": {
+            "id",
+            "class",
+            "style",
+            "fill",
+            "stroke",
+            "stroke-width",
+            "stroke-linecap",
+            "stroke-linejoin",
+            "stroke-dasharray",
+            "stroke-dashoffset",
+            "stroke-opacity",
+            "fill-opacity",
+            "fill-rule",
+            "clip-rule",
+            "opacity",
+            "transform",
+            "d",
+            "x",
+            "y",
+            "x1",
+            "y1",
+            "x2",
+            "y2",
+            "cx",
+            "cy",
+            "r",
+            "rx",
+            "ry",
+            "width",
+            "height",
+            "viewBox",
+            "xmlns",
+            "preserveAspectRatio",
+            "points",
+            "offset",
+            "stop-color",
+            "stop-opacity",
+            "gradientUnits",
+            "gradientTransform",
+            "patternUnits",
+            "patternTransform",
+            "clip-path",
+            "font-family",
+            "font-size",
+            "font-weight",
+            "text-anchor",
+            "dominant-baseline",
+            "dx",
+            "dy",
+            "startOffset",
+            "markerWidth",
+            "markerHeight",
+            "refX",
+            "refY",
+            "orient",
+            "stdDeviation",
+            "in",
+            "in2",
+            "result",
+            "mode",
+            "type",
+            "values",
+            "flood-color",
+            "flood-opacity",
+            "color",
+        },
+        "image": {"href", "width", "height", "x", "y", "preserveAspectRatio"},
+        "use": {"href", "x", "y", "width", "height"},
+    }
 
-    # Remove other suspicious patterns
-    content = re.sub(
-        r"<iframe[^>]*>.*?</iframe>", "", content, flags=re.IGNORECASE | re.DOTALL
+    return nh3.clean(
+        svg_content,
+        tags=safe_svg_tags,
+        attributes=safe_svg_attrs,
+        url_schemes={"http", "https"},
     )
-    content = re.sub(
-        r"<object[^>]*>.*?</object>", "", content, flags=re.IGNORECASE | re.DOTALL
-    )
-    content = re.sub(r"<embed[^>]*>", "", content, flags=re.IGNORECASE)
-
-    return content
 
 
 def sanitize_url(url: str) -> str:

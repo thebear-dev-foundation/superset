@@ -647,8 +647,9 @@ def test_get_user_agent(mocker: MockerFixture, app_context: None) -> None:
 
 @with_config(
     {
-        "USER_AGENT_FUNC": lambda database,
-        source: f"{database.database_name} {source.name}"
+        "USER_AGENT_FUNC": lambda database, source: (
+            f"{database.database_name} {source.name}"
+        )
     }
 )
 def test_get_user_agent_custom(mocker: MockerFixture, app_context: None) -> None:
@@ -1667,6 +1668,44 @@ def test_sanitize_svg_content_removes_scripts():
     result = sanitize_svg_content(malicious_svg)
     assert "script" not in result.lower()
     assert "alert" not in result
+
+
+def test_sanitize_svg_content_blocks_entity_encoded_javascript():
+    """Test that entity-encoded javascript: URIs are neutralised."""
+    svg = '<svg><a href="&#x6A;avascript:alert(1)"><text>click</text></a></svg>'
+    result = sanitize_svg_content(svg)
+    assert "javascript" not in result.lower()
+
+
+def test_sanitize_svg_content_strips_foreign_object():
+    """Test that <foreignObject> (arbitrary HTML host) is stripped."""
+    svg = "<svg><foreignObject><img src=x onerror=alert(1)></foreignObject></svg>"
+    result = sanitize_svg_content(svg)
+    assert "foreignObject" not in result
+    assert "onerror" not in result
+
+
+def test_sanitize_svg_content_strips_animate_set():
+    """Test that <animate>/<set> elements are stripped."""
+    svg = '<svg><animate attributeName="href" to="javascript:alert(1)"/></svg>'
+    result = sanitize_svg_content(svg)
+    assert "animate" not in result.lower()
+    assert "javascript" not in result.lower()
+
+
+def test_sanitize_svg_content_strips_event_handlers():
+    """Test that inline event handlers are removed."""
+    svg = '<svg><rect width="10" height="10" onload="alert(1)"/></svg>'
+    result = sanitize_svg_content(svg)
+    assert "onload" not in result.lower()
+    assert "alert" not in result
+
+
+def test_sanitize_svg_content_empty():
+    """Test that empty/blank input returns empty string."""
+    assert sanitize_svg_content("") == ""
+    assert sanitize_svg_content("   ") == ""
+    assert sanitize_svg_content(None) == ""
 
 
 def test_sanitize_url_relative():
