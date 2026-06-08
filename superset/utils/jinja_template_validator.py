@@ -129,5 +129,12 @@ def validate_params_json_with_jinja(value: str | None) -> None:
         validate_jinja_template_in_params(params)
     except ValidationError:
         raise
-    except (JinjaValidationError, TemplateError, TypeError, ValueError, KeyError, AttributeError) as ex:
+    except (
+        JinjaValidationError,
+        TemplateError,
+        TypeError,
+        ValueError,
+        KeyError,
+        AttributeError,
+    ) as ex:
         raise ValidationError(f"Template validation error: {str(ex)}") from ex

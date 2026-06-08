@@ -247,7 +247,12 @@ class SecretsMigrator:
             # the previous key below — not a condition worth logging.
             try:
                 encrypted_type.process_result_value(raw_value, self._dialect)
-            except (InvalidToken, ValueError, TypeError, KeyError):  # decrypt/decode failures
+            except (
+                InvalidToken,
+                ValueError,
+                TypeError,
+                KeyError,
+            ):  # decrypt/decode failures
                 logger.debug(
                     "Current key cannot decrypt [%s.%s], trying previous key",
                     table_name,
