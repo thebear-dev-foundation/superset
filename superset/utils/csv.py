@@ -17,8 +17,9 @@
 import logging
 import re
 import urllib.request
-from typing import Any, Optional, Union
+from typing import Any, Union
 from urllib.error import URLError
+from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
@@ -96,16 +97,60 @@ def df_to_escaped_csv(df: pd.DataFrame, **kwargs: Any) -> str | None:
     return df.to_csv(escapechar="\\", **kwargs)
 
 
+_ALLOWED_SCHEMES = frozenset({"http", "https"})
+_DEFAULT_TIMEOUT = 300  # seconds
+_MAX_RESPONSE_BYTES = 100 * 1024 * 1024  # 100 MiB
+
+
 def get_chart_csv_data(
-    chart_url: str, auth_cookies: Optional[dict[str, str]] = None
-) -> Optional[bytes]:
+    chart_url: str,
+    auth_cookies: dict[str, str] | None = None,
+    timeout: int = _DEFAULT_TIMEOUT,
+    max_response_bytes: int = _MAX_RESPONSE_BYTES,
+) -> bytes | None:
+    """Fetch CSV data from a chart URL.
+
+    :param chart_url: Fully-qualified URL (``http`` or ``https`` only).
+    :param auth_cookies: Optional mapping of cookie name → value sent with the
+        request.
+    :param timeout: Socket timeout in seconds (default 300).
+    :param max_response_bytes: Maximum response body size in bytes
+        (default 100 MiB).  Raises :class:`ValueError` when exceeded.
+    :returns: Raw response bytes, or ``None`` when *auth_cookies* is falsy.
+    :raises ValueError: If the URL scheme is not ``http``/``https`` or the
+        response exceeds *max_response_bytes*.
+    :raises URLError: If the HTTP status code is not 200.
+    """
+    parsed = urlparse(chart_url)
+    if parsed.scheme not in _ALLOWED_SCHEMES:
+        raise ValueError(
+            f"URL scheme '{parsed.scheme}' is not allowed. "
+            f"Only {sorted(_ALLOWED_SCHEMES)} are supported."
+        )
+
     content = None
     if auth_cookies:
         opener = urllib.request.build_opener()
         cookie_str = ";".join([f"{key}={val}" for key, val in auth_cookies.items()])
         opener.addheaders.append(("Cookie", cookie_str))
-        response = opener.open(chart_url)
-        content = response.read()
+        response = opener.open(chart_url, timeout=timeout)
+
+        chunks: list[bytes] = []
+        bytes_read = 0
+        while True:
+            chunk = response.read(64 * 1024)
+            if not chunk:
+                break
+            bytes_read += len(chunk)
+            if bytes_read > max_response_bytes:
+                response.close()
+                raise ValueError(
+                    f"Response exceeded the maximum allowed size "
+                    f"of {max_response_bytes} bytes."
+                )
+            chunks.append(chunk)
+        content = b"".join(chunks)
+
         if response.getcode() != 200:
             raise URLError(response.getcode())
     if content:
@@ -114,8 +159,8 @@ def get_chart_csv_data(
 
 
 def get_chart_dataframe(
-    chart_url: str, auth_cookies: Optional[dict[str, str]] = None
-) -> Optional[pd.DataFrame]:
+    chart_url: str, auth_cookies: dict[str, str] | None = None
+) -> pd.DataFrame | None:
     # Disable all the unnecessary-lambda violations in this function
     # pylint: disable=unnecessary-lambda
     content = get_chart_csv_data(chart_url, auth_cookies)
