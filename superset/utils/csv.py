@@ -127,7 +127,7 @@ def get_chart_dataframe(
                     df[result["result"][0]["colnames"][i]] = df[
                         result["result"][0]["colnames"][i]
                     ].astype("datetime64[ms]")
-    except BaseException as err:
+    except Exception as err:
         logger.error(err)
 
     # rebuild hierarchical columns and index
