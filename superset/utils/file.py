@@ -14,10 +14,22 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Filename helpers for model export artefacts."""
+
 from werkzeug.utils import secure_filename
 
 
 def get_filename(model_name: str, model_id: int, skip_id: bool = False) -> str:
+    """Build a safe, filesystem-friendly filename for a model export.
+
+    :param model_name: Human-readable model name (sanitised via
+        :func:`werkzeug.utils.secure_filename`).
+    :param model_id: Numeric identifier appended to the slug unless
+        *skip_id* is ``True``.
+    :param skip_id: When ``True``, omit the numeric suffix.
+    :returns: A sanitised filename string.  Falls back to ``str(model_id)``
+        when the sanitised slug is empty.
+    """
     slug = secure_filename(model_name)
     filename = slug if skip_id else f"{slug}_{model_id}"
     return filename if slug else str(model_id)
