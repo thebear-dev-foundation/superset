@@ -680,6 +680,17 @@ def get_datasource_full_name(
     catalog: str | None = None,
     schema: str | None = None,
 ) -> str:
+    """Build a dot-separated, bracket-quoted fully qualified datasource name.
+
+    Joins the non-``None`` parts into ``[database].[catalog].[schema].[table]``
+    form, omitting any segment that is ``None``.
+
+    :param database_name: Name of the database.
+    :param datasource_name: Name of the table / datasource.
+    :param catalog: Optional catalog name.
+    :param schema: Optional schema name.
+    :returns: Fully qualified datasource name, e.g. ``[mydb].[public].[mytable]``.
+    """
     parts = [database_name, catalog, schema, datasource_name]
     return ".".join([f"[{part}]" for part in parts if part])
 
