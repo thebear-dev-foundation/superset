@@ -56,6 +56,7 @@ def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
                     app.config["STATS_LOGGER"].gauge(f"{metric_prefix_}.warning", 1)
                 else:
                     app.config["STATS_LOGGER"].gauge(f"{metric_prefix_}.error", 1)
+                logger.warning("Exception in %s", f.__name__, exc_info=True)
                 raise
 
         return wrapped
@@ -268,6 +269,11 @@ def transaction(  # pylint: disable=redefined-outer-name
                     exc_info=True,
                 )
                 db.session.rollback()  # pylint: disable=consider-using-transaction
+                logger.warning(
+                    "Transaction failed in %s",
+                    func.__name__,
+                    exc_info=True,
+                )
 
                 if on_error:
                     return on_error(ex)

@@ -173,7 +173,7 @@ def refresh_oauth2_token(
             db.session.delete(token)
             db.session.flush()
             raise
-        except Exception:  # noqa: BLE001 — catch-all required: db_engine_spec implementations may raise arbitrary errors
+        except (OSError, KeyError, ValueError, TypeError):
             logger.warning(
                 "OAuth2 token refresh failed for user=%s db=%s",
                 user_id,

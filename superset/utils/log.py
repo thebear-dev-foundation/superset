@@ -196,7 +196,7 @@ class AbstractEventLogger(ABC):
                 if actual_user is not None:
                     db.session.add(actual_user)
                     user_id = get_user_id()
-            except SQLAlchemyError as ex:
+            except (SQLAlchemyError, AttributeError) as ex:
                 logging.warning(
                     "Failed to add user to db session: %s",
                     ex,

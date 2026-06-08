@@ -52,7 +52,7 @@ def validate_jinja_template(template_str: str) -> None:
         env.from_string(template_str)
     except TemplateSyntaxError as e:
         raise JinjaValidationError(f"Invalid Jinja2 template syntax: {str(e)}") from e
-    except TemplateError as e:
+    except (TemplateError, TypeError, ValueError) as e:
         raise JinjaValidationError(f"Template validation error: {str(e)}") from e
 
 
@@ -129,5 +129,12 @@ def validate_params_json_with_jinja(value: str | None) -> None:
         validate_jinja_template_in_params(params)
     except ValidationError:
         raise
-    except (JinjaValidationError, TypeError, KeyError, AttributeError) as ex:
+    except (
+        JinjaValidationError,
+        TemplateError,
+        TypeError,
+        ValueError,
+        KeyError,
+        AttributeError,
+    ) as ex:
         raise ValidationError(f"Template validation error: {str(ex)}") from ex

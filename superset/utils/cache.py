@@ -212,9 +212,10 @@ def etag_cache(  # noqa: C901
                 try:
                     raise_for_access(*args, **kwargs)
                 except SupersetSecurityException:
-                    # If there's no access, bypass the cache and let the function
-                    # handle the response.
-                    logger.debug("Access check failed, bypassing cache")
+                    logger.warning(
+                        "Access check failed, bypassing cache",
+                        exc_info=True,
+                    )
                     return f(*args, **kwargs)
 
             # for POST requests we can't set cache headers, use the response
