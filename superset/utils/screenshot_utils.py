@@ -78,7 +78,7 @@ def combine_screenshot_tiles(screenshot_tiles: list[bytes]) -> bytes:
         combined.save(output, format="PNG")
         return output.getvalue()
 
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.exception("Failed to combine screenshot tiles: %s", e)
         # Return the first tile as fallback
         return screenshot_tiles[0]
@@ -229,6 +229,6 @@ def take_tiled_screenshot(
 
         return combined_screenshot
 
-    except Exception as e:
+    except (OSError, ValueError, RuntimeError) as e:
         logger.exception("Tiled screenshot failed: %s", e)
         return None

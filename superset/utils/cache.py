@@ -94,7 +94,7 @@ def set_and_log_cache(
                 datasource_uid=datasource_uid,
             )
             db.session.add(ck)
-    except Exception as ex:  # pylint: disable=broad-except
+    except (OSError, ValueError, TypeError) as ex:
         # cache.set call can fail if the backend is down or if
         # the key is too large or whatever other reasons
         logger.warning("Could not cache key %s", cache_key)
@@ -197,9 +197,10 @@ def etag_cache(  # noqa: C901
             if raise_for_access:
                 try:
                     raise_for_access(*args, **kwargs)
-                except Exception:  # pylint: disable=broad-except
+                except Exception:  # noqa: BLE001
                     # If there's no access, bypass the cache and let the function
                     # handle the response.
+                    logger.debug("Access check failed, bypassing cache")
                     return f(*args, **kwargs)
 
             # for POST requests we can't set cache headers, use the response
@@ -219,7 +220,7 @@ def etag_cache(  # noqa: C901
                     f, *key_args, **key_kwargs
                 )
                 response = cache.get(cache_key)
-            except Exception:  # pylint: disable=broad-except
+            except (OSError, ValueError, TypeError):  # noqa: BLE001
                 if app.debug:
                     raise
                 logger.exception("Exception possibly due to cache backend.")
@@ -264,7 +265,7 @@ def etag_cache(  # noqa: C901
                 # if we have a cache, store the response from the request
                 try:
                     cache.set(cache_key, response, timeout=timeout)
-                except Exception:  # pylint: disable=broad-except
+                except (OSError, ValueError, TypeError):  # noqa: BLE001
                     if app.debug:
                         raise
                     logger.exception("Exception possibly due to cache backend.")

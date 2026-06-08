@@ -19,11 +19,14 @@
 Centralized version metadata utilities for Apache Superset.
 """
 
+import logging
 import os
 import subprocess
 from typing import Any
 
 from flask import current_app as app
+
+logger = logging.getLogger(__name__)
 
 
 def get_version_metadata() -> dict[str, Any]:
@@ -98,7 +101,8 @@ def _get_local_branch() -> str | None:
         )
         branch = output.decode().strip()
         return None if branch == "HEAD" else branch
-    except Exception:  # pylint: disable=broad-except
+    except (subprocess.SubprocessError, OSError):
+        logger.debug("Failed to get local git branch")
         return None
 
 
@@ -111,5 +115,6 @@ def _get_local_sha() -> str | None:
             timeout=5,
         )
         return output.decode().strip()
-    except Exception:  # pylint: disable=broad-except
+    except (subprocess.SubprocessError, OSError):
+        logger.debug("Failed to get local git SHA")
         return None

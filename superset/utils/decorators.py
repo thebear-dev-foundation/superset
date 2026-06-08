@@ -48,7 +48,7 @@ def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
                 result = f(*args, **kwargs)
                 app.config["STATS_LOGGER"].gauge(f"{metric_prefix_}.ok", 1)
                 return result
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 if (
                     hasattr(ex, "status") and ex.status < 500  # pylint: disable=no-member
                 ):
@@ -260,7 +260,7 @@ def transaction(  # pylint: disable=redefined-outer-name
                 result = func(*args, **kwargs)
                 db.session.commit()  # pylint: disable=consider-using-transaction
                 return result
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 db.session.rollback()  # pylint: disable=consider-using-transaction
 
                 if on_error:

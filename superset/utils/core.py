@@ -606,7 +606,8 @@ def sanitize_url(url: str) -> str:
         # Block everything else (javascript:, data:, etc.)
         return ""
 
-    except Exception:
+    except ValueError:
+        logger.debug("Failed to parse URL: %s", url)
         return ""
 
 
@@ -1460,7 +1461,7 @@ def get_username() -> str | None:
 
     try:
         return g.user.username
-    except Exception:  # pylint: disable=broad-except
+    except AttributeError:
         return None
 
 
@@ -1478,7 +1479,7 @@ def get_user_id() -> int | None:
 
     try:
         return g.user.id
-    except Exception:  # pylint: disable=broad-except
+    except AttributeError:
         return None
 
 
@@ -1491,7 +1492,7 @@ def get_user_email() -> str | None:
 
     try:
         return g.user.email
-    except Exception:  # pylint: disable=broad-except
+    except AttributeError:
         return None
 
 

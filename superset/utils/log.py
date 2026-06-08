@@ -196,7 +196,7 @@ class AbstractEventLogger(ABC):
                 if actual_user is not None:
                     db.session.add(actual_user)
                     user_id = get_user_id()
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 logging.warning("Failed to add user to db session: %s", ex)
                 user_id = None
         payload = collect_request_payload()
@@ -232,7 +232,8 @@ class AbstractEventLogger(ABC):
             # bulk insert
             explode_by = payload.get("explode")
             records = json.loads(payload.get(explode_by))  # type: ignore
-        except Exception:  # pylint: disable=broad-except
+        except (ValueError, TypeError, KeyError):
+            logger.debug("Failed to parse bulk insert payload, using single record")
             records = [payload]
 
         self.log(
@@ -396,7 +397,8 @@ class DBEventLogger(AbstractEventLogger):
             json_string: str | None
             try:
                 json_string = json.dumps(record)
-            except Exception:  # pylint: disable=broad-except
+            except (ValueError, TypeError):
+                logger.debug("Failed to serialize log record to JSON")
                 json_string = None
             log = Log(
                 action=action,
@@ -420,8 +422,7 @@ class DBEventLogger(AbstractEventLogger):
             # Rollback to clean up the session state
             try:
                 db.session.rollback()  # pylint: disable=consider-using-transaction
-            except Exception:  # pylint: disable=broad-except
-                # If rollback also fails, just continue - don't let issues crash the app
+            except SQLAlchemyError:
                 logging.error(
                     "DBEventLogger failed to rollback the session after failure"
                 )

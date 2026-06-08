@@ -40,7 +40,7 @@ def build_pdf_from_screenshots(snapshots: list[bytes]) -> bytes:
         new_pdf = BytesIO()
         images[0].save(new_pdf, "PDF", save_all=True, append_images=images[1:])
         new_pdf.seek(0)
-    except Exception as ex:
+    except (OSError, ValueError) as ex:
         raise ReportSchedulePdfFailedError(
             f"Failed converting screenshots to pdf {str(ex)}"
         ) from ex

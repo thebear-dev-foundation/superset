@@ -173,12 +173,13 @@ def refresh_oauth2_token(
             db.session.delete(token)
             db.session.flush()
             raise
-        except Exception:
+        except Exception:  # noqa: BLE001
             # non-OAuth related failure, log the exception
             logger.warning(
                 "OAuth2 token refresh failed for user=%s db=%s",
                 user_id,
                 database_id,
+                exc_info=True,
             )
             raise
 
@@ -314,7 +315,7 @@ def check_for_oauth2(database: Database) -> Iterator[None]:
     """
     try:
         yield
-    except Exception as ex:
+    except Exception as ex:  # noqa: BLE001
         if database.is_oauth2_enabled() and database.db_engine_spec.needs_oauth2(ex):
             database.db_engine_spec.start_oauth2_dance(database)
         raise

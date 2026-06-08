@@ -107,7 +107,7 @@ class RisonFilterParser:
         try:
             filters_obj = prison.loads(filter_string)
             return self._convert_to_adhoc_filters(filters_obj)
-        except Exception:
+        except (ValueError, TypeError):
             logger.warning(
                 "Failed to parse Rison filters: %s", filter_string, exc_info=True
             )

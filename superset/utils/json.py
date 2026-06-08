@@ -46,7 +46,11 @@ class DashboardEncoder(simplejson.JSONEncoder):
         try:
             vals = {k: v for k, v in o.__dict__.items() if k != "_sa_instance_state"}
             return {f"__{o.__class__.__name__}__": vals}
-        except Exception:  # pylint: disable=broad-except
+        except AttributeError:
+            logger.debug(
+                "Failed to serialize object of type %s via __dict__",
+                type(o).__name__,
+            )
             if isinstance(o, datetime):
                 return {"__datetime__": o.replace(microsecond=0).isoformat()}
             return simplejson.JSONEncoder(sort_keys=True).default(o)
@@ -101,10 +105,11 @@ def base_json_conv(obj: Any) -> Any:  # noqa: C901
     if isinstance(obj, bytes):
         try:
             return obj.decode("utf-8")
-        except Exception:  # pylint: disable=broad-except
+        except UnicodeDecodeError:
             try:
                 return obj.decode("utf-16")
-            except Exception:  # pylint: disable=broad-except
+            except UnicodeDecodeError:
+                logger.debug("Failed to decode bytes as utf-8 or utf-16")
                 return "[bytes]"
 
     raise TypeError(f"Unserializable object {obj} of type {type(obj)}")

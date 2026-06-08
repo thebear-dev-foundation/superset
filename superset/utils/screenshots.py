@@ -24,6 +24,7 @@ from io import BytesIO
 from typing import cast, TYPE_CHECKING, TypedDict
 
 from flask import current_app as app
+from selenium.common.exceptions import WebDriverException
 
 from superset import feature_flag_manager, thumbnail_cache
 from superset.exceptions import ScreenshotImageNotAvailableException
@@ -291,13 +292,13 @@ class BaseScreenshot:
             logger.info("trying to generate screenshot")
             with event_logger.log_context(f"screenshot.compute.{self.thumbnail_type}"):
                 image = self.get_screenshot(user=user, window_size=window_size)
-        except Exception as ex:  # pylint: disable=broad-except
+        except (OSError, RuntimeError, WebDriverException) as ex:
             logger.warning("Failed at generating thumbnail %s", ex, exc_info=True)
             cache_payload.error()
         if image and window_size != thumb_size:
             try:
                 image = self.resize_image(image, thumb_size=thumb_size)
-            except Exception as ex:  # pylint: disable=broad-except
+            except (OSError, ValueError) as ex:
                 logger.warning("Failed at resizing thumbnail %s", ex, exc_info=True)
                 cache_payload.error()
                 image = None
