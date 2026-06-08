@@ -21,7 +21,14 @@ from typing import Any, Optional
 
 from flask import Flask
 from flask_babel import lazy_gettext as _
-from sqlalchemy import Table, text, TypeDecorator
+from sqlalchemy import (
+    column as sa_column,
+    select,
+    Table,
+    table as sa_table,
+    TypeDecorator,
+    update,
+)
 from sqlalchemy.engine import Connection, Dialect, Row
 from sqlalchemy_utils import EncryptedType as SqlaEncryptedType
 
@@ -185,8 +192,8 @@ class SecretsMigrator:
         column_names: list[str],
         table_name: str,
     ) -> Row:
-        cols = ",".join(pk_columns + column_names)
-        return conn.execute(f"SELECT {cols} FROM {table_name}")  # noqa: S608
+        t = sa_table(table_name, *[sa_column(c) for c in pk_columns + column_names])
+        return conn.execute(select(t))
 
     def _re_encrypt_row(
         self,
@@ -278,16 +285,14 @@ class SecretsMigrator:
         if not re_encrypted_columns:
             return
 
-        set_cols = ",".join(f"{name} = :{name}" for name in re_encrypted_columns)
-        where_clause = " AND ".join(f"{pk} = :_pk_{pk}" for pk in pk_columns)
-        pk_bind = {f"_pk_{pk}": row[pk] for pk in pk_columns}
-        conn.execute(
-            text(
-                f"UPDATE {table_name} SET {set_cols} WHERE {where_clause}"  # noqa: S608
-            ),
-            **pk_bind,
-            **re_encrypted_columns,
+        t = sa_table(
+            table_name,
+            *[sa_column(c) for c in list(re_encrypted_columns) + pk_columns],
         )
+        stmt = update(t).values(**re_encrypted_columns)
+        for pk in pk_columns:
+            stmt = stmt.where(t.c[pk] == row[pk])
+        conn.execute(stmt)
 
     def run(self) -> ReEncryptStats:
         """
