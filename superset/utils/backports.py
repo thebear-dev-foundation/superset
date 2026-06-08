@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Backports of standard-library features for older Python versions."""
+
 import sys
 from enum import Enum
 
@@ -23,4 +25,9 @@ if sys.version_info >= (3, 11):
 else:
 
     class StrEnum(str, Enum):
-        pass
+        """String enum backport for Python < 3.11.
+
+        Combines :class:`str` and :class:`~enum.Enum` so that each member
+        is also a native string, matching the behaviour of
+        :class:`enum.StrEnum` introduced in Python 3.11.
+        """
