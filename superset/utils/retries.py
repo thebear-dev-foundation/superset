@@ -15,9 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Generator
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import backoff
 
@@ -28,12 +30,25 @@ def retry_call(  # pylint: disable=too-many-arguments
     strategy: Callable[..., Generator[int, None, None]] = backoff.constant,
     exception: type[Exception] = Exception,
     giveup_log_level: int = logging.WARNING,
-    fargs: Optional[list[Any]] = None,
-    fkwargs: Optional[dict[str, Any]] = None,
+    fargs: list[Any] | None = None,
+    fkwargs: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> Any:
-    """
-    Retry a given call.
+    """Retry *func* with exponential/constant back-off via the ``backoff`` library.
+
+    Wraps ``func`` with :pyfunc:`backoff.on_exception` using the given
+    ``strategy`` and ``exception`` type, then invokes it with the supplied
+    positional and keyword arguments.
+
+    :param func: The callable to retry on failure.
+    :param args: Extra positional arguments forwarded to ``backoff.on_exception``.
+    :param strategy: Back-off wait generator (default: ``backoff.constant``).
+    :param exception: Exception type (or tuple) that triggers a retry.
+    :param giveup_log_level: Log level used when retries are exhausted.
+    :param fargs: Positional arguments passed to *func* on each attempt.
+    :param fkwargs: Keyword arguments passed to *func* on each attempt.
+    :param kwargs: Extra keyword arguments forwarded to ``backoff.on_exception``.
+    :returns: The return value of a successful *func* invocation.
     """
     kwargs["giveup_log_level"] = giveup_log_level
     decorated = backoff.on_exception(strategy, exception, *args, **kwargs)(func)
