@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Helpers for building headless and user-facing Superset URLs."""
+
 import urllib
 from typing import Any
 from urllib.parse import urlparse
@@ -32,6 +34,17 @@ def headless_url(path: str, user_friendly: bool = False) -> str:
 
 
 def get_url_path(view: str, user_friendly: bool = False, **kwargs: Any) -> str:
+    """Build a full headless URL for a Flask view endpoint.
+
+    Resolves the path via :func:`flask.url_for`, prepends the configured
+    ``APPLICATION_ROOT`` when outside a request context, and joins the
+    result with the headless base URL.
+
+    :param view: Flask endpoint name (e.g. ``"Superset.dashboard"``).
+    :param user_friendly: If ``True``, use the user-facing base URL.
+    :param kwargs: Extra keyword arguments forwarded to :func:`flask.url_for`.
+    :returns: Fully-qualified URL suitable for headless browser access.
+    """
     in_request_context = has_request_context()
 
     # When already in a request context, Flask's url_for respects SCRIPT_NAME from
