@@ -16,7 +16,6 @@
 # under the License.
 """Utility functions used across Superset"""
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import _thread
@@ -27,60 +26,31 @@ import os
 import platform
 import re
 import signal
-import smtplib
-import sqlite3
-import ssl
 import tempfile
 import threading
 import traceback
 import uuid
-import warnings
 import zlib
 from collections.abc import Iterable, Iterator, Sequence
-from contextlib import closing, contextmanager
-from dataclasses import dataclass
-from datetime import timedelta
-from email.mime.application import MIMEApplication
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import formatdate
-from enum import Enum, IntEnum
-from io import BytesIO
 from timeit import default_timer
 from types import TracebackType
 from typing import (
     Any,
     Callable,
     cast,
-    NamedTuple,
     Optional,
     TYPE_CHECKING,
-    TypedDict,
     TypeVar,
 )
 from urllib.parse import unquote_plus
-from zipfile import ZipFile
 
-import markdown as md
-import nh3
 import pandas as pd
-import sqlalchemy as sa
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import Certificate, load_pem_x509_certificate
-from flask import current_app as app, g, request
+from flask import current_app as app, request
 from flask_appbuilder.security.sqla.models import User
 from flask_babel import gettext as __
-from flask_sqlalchemy import SQLAlchemy
-from markupsafe import Markup
 from pandas.api.types import infer_dtype
-from pandas.core.dtypes.common import is_numeric_dtype
-from sqlalchemy import event, exc, inspect, select, Text
-from sqlalchemy.dialects.mysql import LONGTEXT, MEDIUMTEXT
-from sqlalchemy.engine import Connection, Engine
-from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy.sql.type_api import Variant
-from sqlalchemy.types import TypeEngine
 from typing_extensions import TypeGuard
 
 from superset.constants import (
@@ -93,7 +63,6 @@ from superset.constants import (
 from superset.errors import ErrorLevel, SupersetErrorType
 from superset.exceptions import (
     CertificateException,
-    SupersetException,
     SupersetTimeoutException,
 )
 from superset.sql.parse import sanitize_clause
@@ -102,25 +71,85 @@ from superset.superset_typing import (
     AdhocMetric,
     AdhocMetricColumn,
     Column,
-    FilterValues,
     FlaskResponse,
     FormData,
     Metric,
 )
-from superset.utils.backports import StrEnum
-from superset.utils.database import get_example_database
-from superset.utils.date_parser import parse_human_timedelta
+
+# ---------------------------------------------------------------------------
+# Re-exports from focused submodules for backward compatibility.
+# ---------------------------------------------------------------------------
+from superset.utils.datetime_utils import (  # noqa: F401  # noqa: F401
+    _process_datetime_column,
+    DateColumn,
+    DTTM_ALIAS,
+    normalize_dttm_col,
+)
+from superset.utils.email import (  # noqa: F401
+    recipients_string_to_list,
+    send_email_smtp,
+    send_mime_email,
+)
+from superset.utils.enums import (  # noqa: F401
+    AdhocFilterClause,
+    AdhocMetricExpressionType,
+    AnnotationType,
+    ColumnSpec,
+    ColumnTypeSource,
+    DashboardStatus,
+    DatasourceDict,
+    DatasourceName,
+    DatasourceType,
+    ExtraFiltersReasonType,
+    ExtraFiltersTimeColumnType,
+    FilterOperator,
+    FilterStringOperators,
+    GenericDataType,
+    HeaderDataType,
+    LoggerLevel,
+    PostProcessingBoxplotWhiskerType,
+    PostProcessingContributionOrientation,
+    QueryObjectFilterClause,
+    QuerySource,
+    QueryStatus,
+    ReservedUrlParameters,
+    RowLevelSecurityFilterType,
+    SqlExpressionType,
+)
 from superset.utils.hashing import hash_from_dict, hash_from_str
-from superset.utils.pandas import detect_datetime_format
+from superset.utils.sanitize import (  # noqa: F401
+    markdown,
+    sanitize_svg_content,
+    sanitize_url,
+)
+from superset.utils.sql import (  # noqa: F401
+    backend,
+    generic_find_constraint_name,
+    generic_find_fk_constraint_name,
+    generic_find_fk_constraint_names,
+    generic_find_uq_constraint_name,
+    get_example_default_schema,
+    LongText,
+    MediumText,
+    pessimistic_connection_handling,
+)
+from superset.utils.user import (  # noqa: F401
+    get_user,
+    get_user_email,
+    get_user_id,
+    get_username,
+    override_user,
+)
+from superset.utils.zip import (  # noqa: F401
+    check_is_safe_zip,
+    create_zip,
+)
 
 if TYPE_CHECKING:
     from superset.explorables.base import ColumnMetadata, Explorable
     from superset.models.core import Database
 
-logging.getLogger("MARKDOWN").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
-
-DTTM_ALIAS = "__timestamp"
 
 TIME_COMPARISON = "__"
 
@@ -155,230 +184,6 @@ METRIC_MAP_TYPE = {
     "VARIANCE": "floating",
     "STDDEV": "floating",
 }
-
-
-class AdhocMetricExpressionType(StrEnum):
-    SIMPLE = "SIMPLE"
-    SQL = "SQL"
-
-
-class SqlExpressionType(StrEnum):
-    """Types of SQL expressions that can be validated."""
-
-    COLUMN = "column"
-    METRIC = "metric"
-    WHERE = "where"
-    HAVING = "having"
-
-
-class AnnotationType(StrEnum):
-    FORMULA = "FORMULA"
-    INTERVAL = "INTERVAL"
-    EVENT = "EVENT"
-    TIME_SERIES = "TIME_SERIES"
-
-
-class GenericDataType(IntEnum):
-    """
-    Generic database column type that fits both frontend and backend.
-    """
-
-    NUMERIC = 0
-    STRING = 1
-    TEMPORAL = 2
-    BOOLEAN = 3
-    # ARRAY = 4     # Mapping all the complex data types to STRING for now
-    # JSON = 5      # and leaving these as a reminder.
-    # MAP = 6
-    # ROW = 7
-
-
-class DatasourceType(StrEnum):
-    TABLE = "table"
-    DATASET = "dataset"
-    QUERY = "query"
-    SAVEDQUERY = "saved_query"
-    VIEW = "view"
-    SEMANTIC_VIEW = "semantic_view"
-
-
-class LoggerLevel(StrEnum):
-    INFO = "info"
-    WARNING = "warning"
-    EXCEPTION = "exception"
-
-
-class HeaderDataType(TypedDict):
-    notification_format: str
-    owners: list[int]
-    notification_type: str
-    notification_source: str | None
-    chart_id: int | None
-    dashboard_id: int | None
-    slack_channels: list[str] | None
-    execution_id: str | None
-
-
-class DatasourceDict(TypedDict):
-    type: str  # todo(hugh): update this to be DatasourceType
-    id: int | str
-
-
-class AdhocFilterClause(TypedDict, total=False):
-    clause: str
-    expressionType: str
-    filterOptionName: str | None
-    comparator: FilterValues | None
-    operator: str
-    subject: str
-    isExtra: bool | None
-    sqlExpression: str | None
-
-
-class QueryObjectFilterClause(TypedDict, total=False):
-    col: Column
-    op: str  # pylint: disable=invalid-name
-    val: FilterValues | None
-    grain: str | None
-    isExtra: bool | None
-
-
-class ExtraFiltersTimeColumnType(StrEnum):
-    TIME_COL = "__time_col"
-    TIME_GRAIN = "__time_grain"
-    TIME_ORIGIN = "__time_origin"
-    TIME_RANGE = "__time_range"
-
-
-class ExtraFiltersReasonType(StrEnum):
-    NO_TEMPORAL_COLUMN = "no_temporal_column"
-    COL_NOT_IN_DATASOURCE = "not_in_datasource"
-
-
-class FilterOperator(StrEnum):
-    """
-    Operators used filter controls
-    """
-
-    EQUALS = "=="
-    NOT_EQUALS = "!="
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    GREATER_THAN_OR_EQUALS = ">="
-    LESS_THAN_OR_EQUALS = "<="
-    LIKE = "LIKE"
-    NOT_LIKE = "NOT LIKE"
-    ILIKE = "ILIKE"
-    NOT_ILIKE = "NOT ILIKE"
-    IS_NULL = "IS NULL"
-    IS_NOT_NULL = "IS NOT NULL"
-    IN = "IN"
-    NOT_IN = "NOT IN"
-    IS_TRUE = "IS TRUE"
-    IS_FALSE = "IS FALSE"
-    TEMPORAL_RANGE = "TEMPORAL_RANGE"
-
-
-class FilterStringOperators(StrEnum):
-    EQUALS = ("EQUALS",)
-    NOT_EQUALS = ("NOT_EQUALS",)
-    LESS_THAN = ("LESS_THAN",)
-    GREATER_THAN = ("GREATER_THAN",)
-    LESS_THAN_OR_EQUAL = ("LESS_THAN_OR_EQUAL",)
-    GREATER_THAN_OR_EQUAL = ("GREATER_THAN_OR_EQUAL",)
-    IN = ("IN",)
-    NOT_IN = ("NOT_IN",)
-    ILIKE = ("ILIKE",)
-    LIKE = ("LIKE",)
-    IS_NOT_NULL = ("IS_NOT_NULL",)
-    IS_NULL = ("IS_NULL",)
-    LATEST_PARTITION = ("LATEST_PARTITION",)
-    IS_TRUE = ("IS_TRUE",)
-    IS_FALSE = ("IS_FALSE",)
-
-
-class PostProcessingBoxplotWhiskerType(StrEnum):
-    """
-    Calculate cell contribution to row/column total
-    """
-
-    TUKEY = "tukey"
-    MINMAX = "min/max"
-    PERCENTILE = "percentile"
-
-
-class PostProcessingContributionOrientation(StrEnum):
-    """
-    Calculate cell contribution to row/column total
-    """
-
-    ROW = "row"
-    COLUMN = "column"
-
-
-class QuerySource(Enum):
-    """
-    The source of a SQL query.
-    """
-
-    CHART = 0
-    DASHBOARD = 1
-    SQL_LAB = 2
-
-
-class QueryStatus(StrEnum):
-    """Enum-type class for query statuses"""
-
-    STOPPED = "stopped"
-    FAILED = "failed"
-    PENDING = "pending"
-    RUNNING = "running"
-    SCHEDULED = "scheduled"
-    SUCCESS = "success"
-    FETCHING = "fetching"
-    TIMED_OUT = "timed_out"
-
-
-class DashboardStatus(StrEnum):
-    """Dashboard status used for frontend filters"""
-
-    PUBLISHED = "published"
-    DRAFT = "draft"
-
-
-class ReservedUrlParameters(StrEnum):
-    """
-    Reserved URL parameters that are used internally by Superset. These will not be
-    passed to chart queries, as they control the behavior of the UI.
-    """
-
-    STANDALONE = "standalone"
-    EDIT_MODE = "edit"
-
-    @staticmethod
-    def is_standalone_mode() -> bool | None:
-        standalone_param = request.args.get(ReservedUrlParameters.STANDALONE.value)
-        standalone: bool | None = bool(
-            standalone_param and standalone_param != "false" and standalone_param != "0"
-        )
-        return standalone
-
-
-class RowLevelSecurityFilterType(StrEnum):
-    REGULAR = "Regular"
-    BASE = "Base"
-
-
-class ColumnTypeSource(Enum):
-    GET_TABLE = 1
-    CURSOR_DESCRIPTION = 2
-
-
-class ColumnSpec(NamedTuple):
-    sqla_type: TypeEngine | str
-    generic_type: GenericDataType
-    is_dttm: bool
-    python_date_format: str | None = None
 
 
 def parse_js_uri_path_item(
@@ -487,288 +292,11 @@ def error_msg_from_exception(ex: Exception) -> str:
     return str(msg) or str(ex)
 
 
-def markdown(raw: str, markup_wrap: bool | None = False) -> str:
-    """Render Markdown to sanitized HTML."""
-    safe_markdown_tags = {
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "b",
-        "i",
-        "strong",
-        "em",
-        "tt",
-        "p",
-        "br",
-        "span",
-        "div",
-        "blockquote",
-        "code",
-        "hr",
-        "ul",
-        "ol",
-        "li",
-        "dd",
-        "dt",
-        "img",
-        "a",
-    }
-    safe_markdown_attrs = {
-        "img": {"src", "alt", "title"},
-        "a": {"href", "alt", "title", "target"},
-    }
-    safe = md.markdown(
-        raw or "",
-        extensions=[
-            "markdown.extensions.tables",
-            "markdown.extensions.fenced_code",
-            "markdown.extensions.codehilite",
-        ],
-    )
-    # pylint: disable=no-member
-    # nh3 preserves supported link attributes and enforces a safe rel value.
-    safe = nh3.clean(safe, tags=safe_markdown_tags, attributes=safe_markdown_attrs)
-    if markup_wrap:
-        safe = Markup(safe)  # noqa: S704
-    return safe
-
-
-def sanitize_svg_content(svg_content: str) -> str:
-    """Sanitize SVG content using nh3 with an SVG-appropriate allowlist.
-
-    Uses nh3 (a Rust-based HTML sanitizer) to parse and filter SVG content,
-    which is robust against entity-encoding bypasses, ``<foreignObject>``
-    injection, and other attacks that defeat regex-based sanitization.
-
-    Args:
-        svg_content: Raw SVG content string
-
-    Returns:
-        str: Sanitized SVG content with only safe elements and attributes
-    """
-    if not svg_content or not svg_content.strip():
-        return ""
-
-    safe_svg_tags: set[str] = {
-        "svg",
-        "g",
-        "defs",
-        "symbol",
-        "use",
-        "rect",
-        "circle",
-        "ellipse",
-        "line",
-        "polyline",
-        "polygon",
-        "path",
-        "text",
-        "tspan",
-        "textPath",
-        "clipPath",
-        "mask",
-        "image",
-        "linearGradient",
-        "radialGradient",
-        "stop",
-        "pattern",
-        "filter",
-        "feGaussianBlur",
-        "feOffset",
-        "feBlend",
-        "feMerge",
-        "feMergeNode",
-        "feFlood",
-        "feComposite",
-        "feColorMatrix",
-        "title",
-        "desc",
-        "marker",
-    }
-
-    safe_svg_attrs: dict[str, set[str]] = {
-        "*": {
-            "id",
-            "class",
-            "style",
-            "fill",
-            "stroke",
-            "stroke-width",
-            "stroke-linecap",
-            "stroke-linejoin",
-            "stroke-dasharray",
-            "stroke-dashoffset",
-            "stroke-opacity",
-            "fill-opacity",
-            "fill-rule",
-            "clip-rule",
-            "opacity",
-            "transform",
-            "d",
-            "x",
-            "y",
-            "x1",
-            "y1",
-            "x2",
-            "y2",
-            "cx",
-            "cy",
-            "r",
-            "rx",
-            "ry",
-            "width",
-            "height",
-            "viewBox",
-            "xmlns",
-            "preserveAspectRatio",
-            "points",
-            "offset",
-            "stop-color",
-            "stop-opacity",
-            "gradientUnits",
-            "gradientTransform",
-            "patternUnits",
-            "patternTransform",
-            "clip-path",
-            "font-family",
-            "font-size",
-            "font-weight",
-            "text-anchor",
-            "dominant-baseline",
-            "dx",
-            "dy",
-            "startOffset",
-            "markerWidth",
-            "markerHeight",
-            "refX",
-            "refY",
-            "orient",
-            "stdDeviation",
-            "in",
-            "in2",
-            "result",
-            "mode",
-            "type",
-            "values",
-            "flood-color",
-            "flood-opacity",
-            "color",
-        },
-        "image": {"href", "width", "height", "x", "y", "preserveAspectRatio"},
-        "use": {"href", "x", "y", "width", "height"},
-    }
-
-    return nh3.clean(
-        svg_content,
-        tags=safe_svg_tags,
-        attributes=safe_svg_attrs,
-        url_schemes={"http", "https"},
-    )
-
-
-def sanitize_url(url: str) -> str:
-    """Sanitize URL using urllib.parse to block dangerous schemes.
-
-    Simple validation using standard library. Allows relative URLs and
-    safe absolute URLs while blocking javascript: and other dangerous schemes.
-
-    Args:
-        url: Raw URL string
-
-    Returns:
-        str: Sanitized URL or empty string if dangerous
-    """
-    if not url or not url.strip():
-        return ""
-
-    url = url.strip()
-
-    # Relative URLs are safe
-    if url.startswith("/"):
-        return url
-
-    try:
-        from urllib.parse import urlparse
-
-        parsed = urlparse(url)
-
-        # Allow safe schemes only
-        if parsed.scheme.lower() in {"http", "https", ""}:
-            return url
-
-        # Block everything else (javascript:, data:, etc.)
-        return ""
-
-    except ValueError:
-        logger.debug("Failed to parse URL: %s", url)
-        return ""
-
-
 def readfile(file_path: str) -> str | None:
     """Read and return the entire contents of a file as a string."""
     with open(file_path) as f:
         content = f.read()
     return content
-
-
-def generic_find_constraint_name(
-    table: str, columns: set[str], referenced: str, database: SQLAlchemy
-) -> str | None:
-    """Utility to find a constraint name in alembic migrations"""
-    tbl = sa.Table(
-        table, database.metadata, autoload=True, autoload_with=database.engine
-    )
-
-    for fk in tbl.foreign_key_constraints:
-        if fk.referred_table.name == referenced and set(fk.column_keys) == columns:
-            return fk.name
-
-    return None
-
-
-def generic_find_fk_constraint_name(
-    table: str, columns: set[str], referenced: str, insp: Inspector
-) -> str | None:
-    """Utility to find a foreign-key constraint name in alembic migrations"""
-    for fk in insp.get_foreign_keys(table):
-        if (
-            fk["referred_table"] == referenced
-            and set(fk["referred_columns"]) == columns
-        ):
-            return fk["name"]
-
-    return None
-
-
-def generic_find_fk_constraint_names(  # pylint: disable=invalid-name
-    table: str, columns: set[str], referenced: str, insp: Inspector
-) -> set[str]:
-    """Utility to find foreign-key constraint names in alembic migrations"""
-    names = set()
-
-    for fk in insp.get_foreign_keys(table):
-        if (
-            fk["referred_table"] == referenced
-            and set(fk["referred_columns"]) == columns
-        ):
-            names.add(fk["name"])
-
-    return names
-
-
-def generic_find_uq_constraint_name(
-    table: str, columns: set[str], insp: Inspector
-) -> str | None:
-    """Utility to find a unique constraint name in alembic migrations"""
-
-    for uq in insp.get_unique_constraints(table):
-        if columns == set(uq["column_names"]):
-            return uq["name"]
-
-    return None
 
 
 def get_datasource_full_name(
@@ -857,209 +385,6 @@ class TimerTimeout:
 timeout: type[TimerTimeout] | type[SigalrmTimeout] = (
     TimerTimeout if platform.system() == "Windows" else SigalrmTimeout
 )
-
-
-def pessimistic_connection_handling(some_engine: Engine) -> None:
-    @event.listens_for(some_engine, "engine_connect")
-    def ping_connection(connection: Connection, branch: bool) -> None:
-        if branch:
-            # 'branch' refers to a sub-connection of a connection,
-            # we don't want to bother pinging on these.
-            return
-
-        # turn off 'close with result'.  This flag is only used with
-        # 'connectionless' execution, otherwise will be False in any case
-        save_should_close_with_result = connection.should_close_with_result
-        connection.should_close_with_result = False
-
-        try:
-            # run a SELECT 1.   use a core select() so that
-            # the SELECT of a scalar value without a table is
-            # appropriately formatted for the backend
-            connection.scalar(select([1]))
-        except exc.DBAPIError as err:
-            # catch SQLAlchemy's DBAPIError, which is a wrapper
-            # for the DBAPI's exception.  It includes a .connection_invalidated
-            # attribute which specifies if this connection is a 'disconnect'
-            # condition, which is based on inspection of the original exception
-            # by the dialect in use.
-            if err.connection_invalidated:
-                # run the same SELECT again - the connection will re-validate
-                # itself and establish a new connection.  The disconnect detection
-                # here also causes the whole connection pool to be invalidated
-                # so that all stale connections are discarded.
-                connection.scalar(select([1]))
-            else:
-                raise
-        finally:
-            # restore 'close with result'
-            connection.should_close_with_result = save_should_close_with_result
-
-    if some_engine.dialect.name == "sqlite":
-
-        @event.listens_for(some_engine, "connect")
-        def set_sqlite_pragma(  # pylint: disable=unused-argument
-            connection: sqlite3.Connection,
-            *args: Any,
-        ) -> None:
-            r"""
-            Enable foreign key support for SQLite.
-
-            :param connection: The SQLite connection
-            :param \*args: Additional positional arguments
-            :see: https://docs.sqlalchemy.org/en/latest/dialects/sqlite.html
-            """
-
-            with closing(connection.cursor()) as cursor:
-                cursor.execute("PRAGMA foreign_keys=ON")
-
-
-def send_email_smtp(  # pylint: disable=invalid-name,too-many-arguments,too-many-locals
-    to: str,
-    subject: str,
-    html_content: str,
-    config: dict[str, Any],
-    files: list[str] | None = None,
-    data: dict[str, str] | None = None,
-    pdf: dict[str, bytes] | None = None,
-    images: dict[str, bytes] | None = None,
-    dryrun: bool = False,
-    cc: str | None = None,
-    bcc: str | None = None,
-    mime_subtype: str = "mixed",
-    header_data: HeaderDataType | None = None,
-) -> None:
-    """
-    Send an email with html content, eg:
-    send_email_smtp(
-        'test@example.com', 'foo', '<b>Foo</b> bar',['/dev/null'], dryrun=True)
-    """
-    smtp_mail_from = config["SMTP_MAIL_FROM"]
-    smtp_mail_to = recipients_string_to_list(to)
-
-    msg = MIMEMultipart(mime_subtype)
-    # Strip CR/LF from the subject so the value cannot inject additional
-    # email headers via header folding/splitting.
-    subject = subject.replace("\r", "").replace("\n", " ").strip()
-    msg["Subject"] = subject
-    msg["From"] = smtp_mail_from
-    msg["To"] = ", ".join(smtp_mail_to)
-
-    msg.preamble = "This is a multi-part message in MIME format."
-
-    recipients = smtp_mail_to
-    if cc:
-        smtp_mail_cc = recipients_string_to_list(cc)
-        msg["Cc"] = ", ".join(smtp_mail_cc)
-        recipients = recipients + smtp_mail_cc
-
-    smtp_mail_bcc = []
-    if bcc:
-        # don't add bcc in header
-        smtp_mail_bcc = recipients_string_to_list(bcc)
-        recipients = recipients + smtp_mail_bcc
-
-    msg["Date"] = formatdate(localtime=True)
-    mime_text = MIMEText(html_content, "html")
-    msg.attach(mime_text)
-
-    # Attach files by reading them from disk
-    for fname in files or []:
-        basename = os.path.basename(fname)
-        with open(fname, "rb") as f:
-            msg.attach(
-                MIMEApplication(
-                    f.read(),
-                    Content_Disposition=f"attachment; filename='{basename}'",
-                    Name=basename,
-                )
-            )
-
-    # Attach any files passed directly
-    for name, body in (data or {}).items():
-        msg.attach(
-            MIMEApplication(
-                body, Content_Disposition=f"attachment; filename='{name}'", Name=name
-            )
-        )
-
-    for name, body_pdf in (pdf or {}).items():
-        msg.attach(
-            MIMEApplication(
-                body_pdf,
-                Content_Disposition=f"attachment; filename='{name}'",
-                Name=name,
-            )
-        )
-
-    # Attach any inline images, which may be required for display in
-    # HTML content (inline)
-    for msgid, imgdata in (images or {}).items():
-        formatted_time = formatdate(localtime=True)
-        file_name = f"{subject} {formatted_time}"
-        image = MIMEImage(imgdata, name=file_name)
-        image.add_header("Content-ID", f"<{msgid}>")
-        image.add_header("Content-Disposition", "inline")
-        msg.attach(image)
-    msg_mutator = config["EMAIL_HEADER_MUTATOR"]
-    # the base notification returns the message without any editing.
-    new_msg = msg_mutator(msg, **(header_data or {}))
-    new_to = new_msg["To"].split(", ") if "To" in new_msg else []
-    new_cc = new_msg["Cc"].split(", ") if "Cc" in new_msg else []
-    new_recipients = new_to + new_cc + smtp_mail_bcc
-    if set(new_recipients) != set(recipients):
-        recipients = new_recipients
-    send_mime_email(smtp_mail_from, recipients, new_msg, config, dryrun=dryrun)
-
-
-def send_mime_email(
-    e_from: str,
-    e_to: list[str],
-    mime_msg: MIMEMultipart,
-    config: dict[str, Any],
-    dryrun: bool = False,
-) -> None:
-    smtp_host = config["SMTP_HOST"]
-    smtp_port = config["SMTP_PORT"]
-    smtp_user = config["SMTP_USER"]
-    smtp_password = config["SMTP_PASSWORD"]
-    smtp_starttls = config["SMTP_STARTTLS"]
-    smtp_ssl = config["SMTP_SSL"]
-    smtp_ssl_server_auth = config["SMTP_SSL_SERVER_AUTH"]
-
-    if dryrun:
-        logger.info("Dryrun enabled, email notification content is below:")
-        logger.info(mime_msg.as_string())
-        return
-
-    # Default ssl context is SERVER_AUTH using the default system
-    # root CA certificates
-    ssl_context = ssl.create_default_context() if smtp_ssl_server_auth else None
-    smtp = (
-        smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl_context)
-        if smtp_ssl
-        else smtplib.SMTP(smtp_host, smtp_port)
-    )
-    if smtp_starttls:
-        smtp.starttls(context=ssl_context)
-    if smtp_user and smtp_password:
-        smtp.login(smtp_user, smtp_password)
-    logger.debug("Sent an email to %s", str(e_to))
-    smtp.sendmail(e_from, e_to, mime_msg.as_string())
-    smtp.quit()
-
-
-def recipients_string_to_list(address_string: str | None) -> list[str]:
-    """
-    Returns the list of target recipients for alerts and reports.
-
-    Strips values and converts a comma/semicolon separated
-    string into a list.
-    """
-    address_string_list: list[str] = []
-    if isinstance(address_string, str):
-        address_string_list = re.split(r",|\s|;", address_string)
-    return [x.strip() for x in address_string_list if x.strip()]
 
 
 def choicify(values: Iterable[Any]) -> list[tuple[Any, Any]]:
@@ -1336,19 +661,6 @@ def user_label(user: User) -> str | None:
     return None
 
 
-def get_example_default_schema() -> str | None:
-    """
-    Return the default schema of the examples database, if any.
-    """
-    database = get_example_database()
-    with database.get_sqla_engine() as engine:
-        return inspect(engine).default_schema_name
-
-
-def backend() -> str:
-    return get_example_database().backend
-
-
 def is_adhoc_metric(metric: Metric) -> TypeGuard[AdhocMetric]:
     return isinstance(metric, dict) and "expressionType" in metric
 
@@ -1539,86 +851,6 @@ def split_adhoc_filters_into_base_filters(  # pylint: disable=invalid-name
         form_data["filters"] = simple_where_filters
 
 
-def get_user() -> User | None:
-    """
-    Get the current user (if defined).
-
-    :returns: The current user
-    """
-    return g.user if hasattr(g, "user") else None
-
-
-def get_username() -> str | None:
-    """
-    Get username (if defined) associated with the current user.
-
-    :returns: The username
-    """
-
-    try:
-        return g.user.username
-    except AttributeError:
-        return None
-
-
-def get_user_id() -> int | None:
-    """
-    Get the user identifier (if defined) associated with the current user.
-
-    Though the Flask-AppBuilder `User` and Flask-Login  `AnonymousUserMixin` and
-    `UserMixin` models provide a convenience `get_id` method, for generality, the
-    identifier is encoded as a `str` whereas in Superset all identifiers are encoded as
-    an `int`.
-
-    returns: The user identifier
-    """
-
-    try:
-        return g.user.id
-    except AttributeError:
-        return None
-
-
-def get_user_email() -> str | None:
-    """
-    Get the email (if defined) associated with the current user.
-
-    :returns: The email
-    """
-
-    try:
-        return g.user.email
-    except AttributeError:
-        return None
-
-
-@contextmanager
-def override_user(user: User | None, force: bool = True) -> Iterator[Any]:
-    """
-    Temporarily override the current user per `flask.g` with the specified user.
-
-    Sometimes, often in the context of async Celery tasks, it is useful to switch the
-    current user (which may be undefined) to different one, execute some SQLAlchemy
-    tasks et al. and then revert back to the original one.
-
-    :param user: The override user
-    :param force: Whether to override the current user if set
-    """
-
-    if hasattr(g, "user"):
-        if force or g.user is None:
-            current = g.user
-            g.user = user
-            yield
-            g.user = current
-        else:
-            yield
-    else:
-        g.user = user
-        yield
-        delattr(g, "user")
-
-
 def parse_ssl_cert(certificate: str) -> Certificate:
     """
     Parses the contents of a certificate and returns a valid certificate object
@@ -1675,22 +907,8 @@ def time_function(
     return (stop - start) * 1000.0, response
 
 
-def MediumText() -> Variant:  # pylint:disable=invalid-name  # noqa: N802
-    return Text().with_variant(MEDIUMTEXT(), "mysql")
-
-
-def LongText() -> Variant:  # pylint:disable=invalid-name  # noqa: N802
-    return Text().with_variant(LONGTEXT(), "mysql")
-
-
 def shortid() -> str:
     return f"{uuid.uuid4()}"[-12:]
-
-
-class DatasourceName(NamedTuple):
-    table: str
-    schema: str
-    catalog: str | None = None
 
 
 def get_stacktrace() -> str | None:
@@ -2017,120 +1235,6 @@ def remove_duplicates(
     return result
 
 
-@dataclass
-class DateColumn:
-    col_label: str
-    timestamp_format: str | None = None
-    offset: int | None = None
-    time_shift: str | None = None
-
-    def __hash__(self) -> int:
-        return hash(self.col_label)
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, DateColumn) and hash(self) == hash(other)
-
-    @classmethod
-    def get_legacy_time_column(
-        cls,
-        timestamp_format: str | None,
-        offset: int | None,
-        time_shift: str | None,
-    ) -> DateColumn:
-        return cls(
-            timestamp_format=timestamp_format,
-            offset=offset,
-            time_shift=time_shift,
-            col_label=DTTM_ALIAS,
-        )
-
-
-def _process_datetime_column(
-    df: pd.DataFrame,
-    col: DateColumn,
-) -> None:
-    """Process a single datetime column with format detection."""
-    if col.timestamp_format in ("epoch_s", "epoch_ms"):
-        dttm_series = df[col.col_label]
-        if is_numeric_dtype(dttm_series):
-            # Column is formatted as a numeric value
-            unit = col.timestamp_format.replace("epoch_", "")
-            df[col.col_label] = pd.to_datetime(
-                dttm_series,
-                utc=False,
-                unit=unit,
-                origin="unix",
-                errors="coerce",
-                exact=False,
-            )
-        else:
-            # Column has already been formatted as a timestamp.
-            try:
-                df[col.col_label] = dttm_series.apply(
-                    lambda x: pd.Timestamp(x) if pd.notna(x) else pd.NaT
-                )
-            except ValueError:
-                logger.warning(
-                    "Unable to convert column %s to datetime, ignoring",
-                    col.col_label,
-                )
-    else:
-        # Try to detect format if not specified
-        format_to_use = col.timestamp_format or detect_datetime_format(
-            df[col.col_label]
-        )
-
-        # Parse with or without format (suppress warning if no format)
-        if format_to_use:
-            df[col.col_label] = pd.to_datetime(
-                df[col.col_label],
-                utc=False,
-                format=format_to_use,
-                errors="coerce",
-                exact=False,
-            )
-        else:
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message=".*Could not infer format.*")
-                df[col.col_label] = pd.to_datetime(
-                    df[col.col_label],
-                    utc=False,
-                    format=None,
-                    errors="coerce",
-                    exact=False,
-                )
-
-
-def normalize_dttm_col(
-    df: pd.DataFrame,
-    dttm_cols: tuple[DateColumn, ...] = tuple(),  # noqa: C408
-    format_map: dict[str, str] | None = None,
-) -> None:
-    """
-    Normalize datetime columns in a DataFrame.
-
-    :param df: DataFrame to process
-    :param dttm_cols: Tuple of DateColumn objects to process
-    :param format_map: Optional mapping of column names to datetime formats.
-                       When provided, these pre-detected formats are used instead
-                       of runtime detection, improving performance and consistency.
-    """
-    for _col in dttm_cols:
-        if _col.col_label not in df.columns:
-            continue
-
-        # Use format from format_map if available and not already set
-        if format_map and _col.col_label in format_map and not _col.timestamp_format:
-            _col.timestamp_format = format_map[_col.col_label]
-
-        _process_datetime_column(df, _col)
-
-        if _col.offset:
-            df[_col.col_label] += timedelta(hours=_col.offset)
-        if _col.time_shift is not None:
-            df[_col.col_label] += parse_human_timedelta(_col.time_shift)
-
-
 def parse_boolean_string(bool_str: str | None) -> bool:
     """
     Convert a string representation of a true/false value into a boolean
@@ -2191,37 +1295,6 @@ def apply_max_row_limit(
     if limit != 0:
         return min(max_limit, limit)
     return max_limit
-
-
-def create_zip(files: dict[str, Any]) -> BytesIO:
-    buf = BytesIO()
-    with ZipFile(buf, "w") as bundle:
-        for filename, contents in files.items():
-            with bundle.open(filename, "w") as fp:
-                fp.write(contents)
-    buf.seek(0)
-    return buf
-
-
-def check_is_safe_zip(zip_file: ZipFile) -> None:
-    """
-    Checks whether a ZIP file is safe, raises SupersetException if not.
-
-    :param zip_file:
-    :return:
-    """
-    # pylint: disable=import-outside-toplevel
-
-    uncompress_size = 0
-    compress_size = 0
-    for zip_file_element in zip_file.infolist():
-        if zip_file_element.file_size > app.config["ZIPPED_FILE_MAX_SIZE"]:
-            raise SupersetException("Found file with size above allowed threshold")
-        uncompress_size += zip_file_element.file_size
-        compress_size += zip_file_element.compress_size
-    compress_ratio = uncompress_size / compress_size
-    if compress_ratio > app.config["ZIP_FILE_MAX_COMPRESS_RATIO"]:
-        raise SupersetException("Zip compress ratio above allowed threshold")
 
 
 def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:
