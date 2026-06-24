@@ -53,6 +53,8 @@ def check_is_safe_zip(zip_file: ZipFile) -> None:
             raise SupersetException("Found file with size above allowed threshold")
         uncompress_size += zip_file_element.file_size
         compress_size += zip_file_element.compress_size
+    if compress_size == 0:
+        return
     compress_ratio = uncompress_size / compress_size
     if compress_ratio > app.config["ZIP_FILE_MAX_COMPRESS_RATIO"]:
         raise SupersetException("Zip compress ratio above allowed threshold")

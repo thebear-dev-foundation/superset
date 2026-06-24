@@ -79,7 +79,7 @@ from superset.superset_typing import (
 # ---------------------------------------------------------------------------
 # Re-exports from focused submodules for backward compatibility.
 # ---------------------------------------------------------------------------
-from superset.utils.datetime_utils import (  # noqa: F401  # noqa: F401
+from superset.utils.datetime_utils import (  # noqa: F401
     _process_datetime_column,
     DateColumn,
     DTTM_ALIAS,
