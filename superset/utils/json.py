@@ -43,8 +43,18 @@ class DashboardEncoder(simplejson.JSONEncoder):
     def default(self, o: Any) -> Union[dict[Any, Any], str]:  # type: ignore
         if isinstance(o, uuid.UUID):
             return str(o)
+        _sensitive_keys = {
+            "password",
+            "encrypted_extra",
+            "private_key",
+            "private_key_password",
+        }
         try:
-            vals = {k: v for k, v in o.__dict__.items() if k != "_sa_instance_state"}
+            vals = {
+                k: v
+                for k, v in o.__dict__.items()
+                if k != "_sa_instance_state" and k not in _sensitive_keys
+            }
             return {f"__{o.__class__.__name__}__": vals}
         except AttributeError:
             logger.debug(
