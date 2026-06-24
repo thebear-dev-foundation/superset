@@ -16,7 +16,7 @@
 # under the License.
 """Date/time conversion helpers for epoch-based timestamps."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 
@@ -34,4 +34,4 @@ def datetime_to_epoch(dttm: datetime) -> float:
 
 def now_as_float() -> float:
     """Return the current UTC time as milliseconds since the Unix epoch."""
-    return datetime_to_epoch(datetime.utcnow())
+    return datetime_to_epoch(datetime.now(tz=timezone.utc))
