@@ -155,7 +155,7 @@ TIME_COMPARISON = "__"
 
 JS_MAX_INTEGER = 9007199254740991  # Largest int Java Script can handle 2^53-1
 
-InputType = TypeVar("InputType")  # pylint: disable=invalid-name
+InputType = TypeVar("InputType")
 
 ADHOC_FILTERS_REGEX = re.compile("^adhoc_filters")
 
@@ -329,9 +329,7 @@ class SigalrmTimeout:
         self.seconds = seconds
         self.error_message = error_message
 
-    def handle_timeout(  # pylint: disable=unused-argument
-        self, signum: int, frame: Any
-    ) -> None:
+    def handle_timeout(self, signum: int, frame: Any) -> None:
         logger.error("Process timed out", exc_info=True)
         raise SupersetTimeoutException(
             error_type=SupersetErrorType.BACKEND_TIMEOUT_ERROR,
@@ -349,9 +347,7 @@ class SigalrmTimeout:
             logger.warning("timeout can't be used in the current context")
             logger.exception(ex)
 
-    def __exit__(  # pylint: disable=redefined-outer-name,redefined-builtin
-        self, type: Any, value: Any, traceback: TracebackType
-    ) -> None:
+    def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
         try:
             signal.alarm(0)
         except ValueError as ex:
@@ -368,9 +364,7 @@ class TimerTimeout:
     def __enter__(self) -> None:
         self.timer.start()
 
-    def __exit__(  # pylint: disable=redefined-outer-name,redefined-builtin
-        self, type: Any, value: Any, traceback: TracebackType
-    ) -> None:
+    def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
         self.timer.cancel()
         if type is KeyboardInterrupt:  # raised by _thread.interrupt_main
             raise SupersetTimeoutException(
@@ -599,9 +593,7 @@ def merge_extra_filters(form_data: dict[str, Any]) -> None:  # noqa: C901
             ):
                 existing_filters[get_filter_key(existing)] = existing["comparator"]
 
-        for filtr in form_data[  # pylint: disable=too-many-nested-blocks
-            "extra_filters"
-        ]:
+        for filtr in form_data["extra_filters"]:
             filtr["isExtra"] = True
             # Pull out time filters/options and merge into form data
             filter_column = filtr["col"]
@@ -790,7 +782,7 @@ def ensure_path_exists(path: str) -> None:
             raise
 
 
-def convert_legacy_filters_into_adhoc(  # pylint: disable=invalid-name
+def convert_legacy_filters_into_adhoc(
     form_data: FormData,
 ) -> None:
     if not form_data.get("adhoc_filters"):
@@ -813,7 +805,7 @@ def convert_legacy_filters_into_adhoc(  # pylint: disable=invalid-name
             del form_data[key]
 
 
-def split_adhoc_filters_into_base_filters(  # pylint: disable=invalid-name
+def split_adhoc_filters_into_base_filters(
     form_data: FormData,
     engine: str,
 ) -> None:
@@ -877,8 +869,6 @@ def create_ssl_cert_file(certificate: str) -> str:
     :raises CertificateException: If certificate is not valid/unparseable
     """
     filename = f"{hash_from_str(certificate)}.crt"
-    # pylint: disable=import-outside-toplevel
-
     cert_dir = app.config["SSL_CERT_PATH"]
     path = cert_dir if cert_dir else tempfile.gettempdir()
     path = os.path.join(path, filename)
@@ -912,8 +902,6 @@ def shortid() -> str:
 
 
 def get_stacktrace() -> str | None:
-    # pylint: disable=import-outside-toplevel
-
     if app.config["SHOW_STACKTRACE"]:
         return traceback.format_exc()
     return None
@@ -1285,8 +1273,6 @@ def apply_max_row_limit(
     >>> apply_max_row_limit(0)  # Zero returns default max limit
     50000
     """
-    # pylint: disable=import-outside-toplevel
-
     max_limit = (
         app.config["TABLE_VIZ_MAX_ROW_SERVER"]
         if server_pagination
@@ -1330,8 +1316,6 @@ def get_query_source_from_request() -> QuerySource | None:
 
 
 def get_user_agent(database: Database, source: QuerySource | None) -> str:
-    # pylint: disable=import-outside-toplevel
-
     source = source or get_query_source_from_request()
     if user_agent_func := app.config["USER_AGENT_FUNC"]:
         return user_agent_func(database, source)
