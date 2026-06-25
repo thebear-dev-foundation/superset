@@ -226,6 +226,10 @@ def sanitize_url(url: str) -> str:
 
     url = url.strip()
 
+    # Block protocol-relative URLs (//host/...) which bypass scheme checks
+    if url.startswith("//") or url.startswith("\\\\"):
+        return ""
+
     # Relative URLs are safe
     if url.startswith("/"):
         return url
@@ -236,7 +240,7 @@ def sanitize_url(url: str) -> str:
         parsed = urlparse(url)
 
         # Allow safe schemes only
-        if parsed.scheme.lower() in {"http", "https", ""}:
+        if parsed.scheme.lower() in {"http", "https"}:
             return url
 
         # Block everything else (javascript:, data:, etc.)

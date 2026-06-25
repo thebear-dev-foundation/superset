@@ -1724,6 +1724,13 @@ def test_sanitize_url_safe_absolute():
     )
 
 
+def test_sanitize_url_blocks_protocol_relative():
+    """Test that protocol-relative URLs are blocked."""
+    assert sanitize_url("//evil.com/payload") == ""
+    assert sanitize_url("//evil.com") == ""
+    assert sanitize_url("\\\\evil.com") == ""
+
+
 def test_sanitize_url_blocks_dangerous():
     """Test that dangerous URL schemes are blocked."""
     assert sanitize_url("javascript:alert('xss')") == ""
