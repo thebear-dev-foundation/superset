@@ -187,6 +187,15 @@ def debounce(duration: float | int = 0.1) -> Callable[..., Any]:
 
 
 def on_security_exception(self: Any, ex: Exception) -> Response:
+    """Return a 403 JSON response when a security exception is raised.
+
+    Intended as a callback for Flask-AppBuilder view classes that need a
+    uniform error response for authorization failures.
+
+    :param self: The view instance exposing a ``response`` helper.
+    :param ex: The caught security exception.
+    :returns: A Flask ``Response`` with HTTP 403 and an error message body.
+    """
     return self.response(403, **{"message": utils.error_msg_from_exception(ex)})
 
 
