@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Logging configuration base classes and formatters."""
+
 import abc
 import logging
 from logging.handlers import TimedRotatingFileHandler

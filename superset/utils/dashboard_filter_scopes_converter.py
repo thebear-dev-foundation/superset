@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Converter for legacy dashboard filter scopes."""
+
 import logging
 from collections import defaultdict
 from typing import Any

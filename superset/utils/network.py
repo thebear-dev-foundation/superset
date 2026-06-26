@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Network utilities for port and hostname validation."""
+
 import socket
 
 PORT_TIMEOUT = 5

@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""OAuth2 token management for database connections."""
 
 from __future__ import annotations
 

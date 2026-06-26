@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Public interface hashing for API stability checks."""
+
 from base64 import b85encode
 from hashlib import md5
 from inspect import (
