@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 from base64 import b85encode
-from hashlib import md5
+from hashlib import sha256
 from inspect import (
     getmembers,
     getsourcefile,
@@ -40,13 +40,13 @@ def compute_hash(obj: Callable[..., Any]) -> str:
 
 
 def compute_func_hash(function: Callable[..., Any]) -> str:
-    hashed = md5()  # noqa: S324
+    hashed = sha256()
     hashed.update(str(signature(function)).encode())
     return b85encode(hashed.digest()).decode("utf-8")
 
 
 def compute_class_hash(class_: Callable[..., Any]) -> str:
-    hashed = md5()  # noqa: S324
+    hashed = sha256()
     public_methods = sorted(
         [
             (name, method)
