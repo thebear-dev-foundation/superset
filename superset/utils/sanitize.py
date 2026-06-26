@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import urlparse
 
 import markdown as md
 import nh3
@@ -235,8 +236,6 @@ def sanitize_url(url: str) -> str:
         return url
 
     try:
-        from urllib.parse import urlparse
-
         parsed = urlparse(url)
 
         # Allow safe schemes only
