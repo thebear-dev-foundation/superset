@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Date and time parsing utilities for Superset queries."""
+
 from __future__ import annotations
 
 import calendar

@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Mock data generation for testing and example datasets."""
+
 import decimal
 import logging
 import os

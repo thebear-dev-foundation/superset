@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""CSV export, escaping, and chart data retrieval utilities."""
+
 import logging
 import re
 import urllib.request
@@ -161,6 +163,17 @@ def get_chart_csv_data(
 def get_chart_dataframe(
     chart_url: str, auth_cookies: dict[str, str] | None = None
 ) -> pd.DataFrame | None:
+    """Fetch chart data as JSON from *chart_url* and return it as a DataFrame.
+
+    Temporal columns (``GenericDataType.TEMPORAL``) are converted to
+    ``datetime64[ms]``.  Hierarchical column and index names are rebuilt
+    as :class:`pandas.MultiIndex` structures.
+
+    :param chart_url: Fully-qualified URL of the chart endpoint.
+    :param auth_cookies: Optional cookie name-value pairs for authentication.
+    :returns: A :class:`~pandas.DataFrame`, or ``None`` when the response is
+        empty or *auth_cookies* is falsy.
+    """
     # Disable all the unnecessary-lambda violations in this function
     # pylint: disable=unnecessary-lambda
     content = get_chart_csv_data(chart_url, auth_cookies)

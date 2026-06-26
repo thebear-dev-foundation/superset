@@ -14,6 +14,7 @@
 #  KIND, either express or implied.  See the License for the
 #  specific language governing permissions and limitations
 #  under the License.
+"""SSH tunnel configuration helpers for database connections."""
 
 from typing import Any
 

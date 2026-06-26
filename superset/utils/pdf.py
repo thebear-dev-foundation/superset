@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""PDF generation from screenshot images."""
 
 import logging
 from io import BytesIO

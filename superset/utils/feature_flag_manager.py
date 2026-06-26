@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Manager for reading and evaluating feature flags."""
+
 from copy import deepcopy
 
 from flask import Flask

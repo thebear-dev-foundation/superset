@@ -14,6 +14,7 @@
 #  KIND, either express or implied.  See the License for the
 #  specific language governing permissions and limitations
 #  under the License.
+"""Utilities for dynamic class loading by fully qualified name."""
 
 from importlib import import_module
 from typing import Any

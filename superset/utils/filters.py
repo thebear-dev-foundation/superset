@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""SQLAlchemy filter helpers for dataset access control."""
+
 from typing import Any
 
 from flask_appbuilder import Model
