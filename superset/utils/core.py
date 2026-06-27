@@ -356,6 +356,11 @@ class SigalrmTimeout:
 
 
 class TimerTimeout:
+    """``threading.Timer``-based timeout context manager.
+
+    Used on platforms where ``SIGALRM`` is unavailable.
+    """
+
     def __init__(self, seconds: int = 1, error_message: str = "Timeout") -> None:
         self.seconds = seconds
         self.error_message = error_message

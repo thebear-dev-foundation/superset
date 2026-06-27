@@ -166,6 +166,12 @@ class SupersetCache(Cache):
 
 
 class ExploreFormDataCache(SupersetCache):
+    """Cache subclass that normalizes legacy ``dataset_id`` keys.
+
+    Rewrites ``dataset_id`` to ``datasource_id`` and injects a default
+    ``datasource_type`` when missing.
+    """
+
     def get(self, *args: Any, **kwargs: Any) -> Optional[Union[str, Markup]]:
         cache = self.cache.get(*args, **kwargs)
 
@@ -187,6 +193,8 @@ class ExploreFormDataCache(SupersetCache):
 
 
 class CacheManager:
+    """Orchestrator that initializes and exposes all application-level caches."""
+
     def __init__(self) -> None:
         super().__init__()
 
