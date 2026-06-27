@@ -136,6 +136,9 @@ def get_chart_csv_data(
         cookie_str = ";".join([f"{key}={val}" for key, val in auth_cookies.items()])
         opener.addheaders.append(("Cookie", cookie_str))
         response = opener.open(chart_url, timeout=timeout)
+        if response.getcode() != 200:
+            response.close()
+            raise URLError(response.getcode())
 
         chunks: list[bytes] = []
         bytes_read = 0
@@ -152,9 +155,6 @@ def get_chart_csv_data(
                 )
             chunks.append(chunk)
         content = b"".join(chunks)
-
-        if response.getcode() != 200:
-            raise URLError(response.getcode())
     if content:
         return content
     return None
