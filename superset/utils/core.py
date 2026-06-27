@@ -292,8 +292,14 @@ def error_msg_from_exception(ex: Exception) -> str:
     return str(msg) or str(ex)
 
 
-def readfile(file_path: str) -> str | None:
-    """Read and return the entire contents of a file as a string."""
+def readfile(file_path: str) -> str:
+    """Read and return the entire contents of a file as a string.
+
+    :param file_path: Path to the file to read.
+    :returns: The file contents as a single string.
+    :raises FileNotFoundError: If *file_path* does not exist.
+    :raises OSError: If the file cannot be opened or read.
+    """
     with open(file_path) as f:
         content = f.read()
     return content
@@ -356,6 +362,23 @@ class SigalrmTimeout:
 
 
 class TimerTimeout:
+    """Thread-based timeout using ``_thread.interrupt_main()``.
+
+    Intended as a ``with``-block context manager, similar to
+    :class:`SigalrmTimeout`, but works on platforms without ``SIGALRM``
+    (e.g. Windows).
+
+    Limitations compared to :class:`SigalrmTimeout`:
+
+    * Cannot interrupt blocking C-extension calls (e.g. a hung database
+      driver) because ``interrupt_main()`` only sets a flag that the
+      interpreter checks between bytecode instructions.
+    * ``__exit__`` treats any incoming ``KeyboardInterrupt`` as a timer
+      event and re-raises it as :class:`SupersetTimeoutException`.  A
+      genuine user Ctrl-C that arrives while the block is active will
+      therefore be misidentified as a timeout.
+    """
+
     def __init__(self, seconds: int = 1, error_message: str = "Timeout") -> None:
         self.seconds = seconds
         self.error_message = error_message
