@@ -38,6 +38,28 @@ from superset.utils.core import get_user_id, LoggerLevel, to_int
 
 logger = logging.getLogger(__name__)
 
+# Sensitive field names that must be redacted before persisting to the audit log.
+# Keys are matched case-insensitively against request payload fields.
+SENSITIVE_LOG_FIELDS: set[str] = {
+    "password",
+    "token",
+    "access_token",
+    "refresh_token",
+    "secret",
+    "private_key",
+    "private_key_password",
+}
+
+REDACTED_VALUE = "**REDACTED**"
+
+
+def _redact_sensitive_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    """Redact values of sensitive keys in a payload dict (case-insensitive)."""
+    return {
+        k: (REDACTED_VALUE if k.lower() in SENSITIVE_LOG_FIELDS else v)
+        for k, v in payload.items()
+    }
+
 
 def collect_request_payload() -> dict[str, Any]:
     """Collect log payload identifiable from request context"""
@@ -46,9 +68,10 @@ def collect_request_payload() -> dict[str, Any]:
 
     payload: dict[str, Any] = {
         "path": request.path,
-        **request.form.to_dict(),
-        # url search params can overwrite POST body
+        # Merge URL query params first, then form data, so that POST body
+        # values take precedence over URL params (prevents audit-log pollution).
         **request.args.to_dict(),
+        **request.form.to_dict(),
     }
 
     if request.is_json:
@@ -68,7 +91,7 @@ def collect_request_payload() -> dict[str, Any]:
     if "rison" in payload and not payload["rison"]:
         del payload["rison"]
 
-    return payload
+    return _redact_sensitive_fields(payload)
 
 
 def get_logger_from_status(
