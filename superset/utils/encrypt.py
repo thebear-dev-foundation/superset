@@ -39,6 +39,13 @@ from superset.exceptions import SupersetException
 
 
 class EncryptedType(SqlaEncryptedType):
+    """SQLAlchemy encrypted column type with statement-caching support.
+
+    ``cache_ok = True`` is safe because the encryption key is retrieved via a
+    deferred callable at runtime, so the type instance carries no per-key state
+    that would invalidate a cached query plan.
+    """
+
     cache_ok = True
 
 

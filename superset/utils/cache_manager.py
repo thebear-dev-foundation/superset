@@ -166,6 +166,8 @@ class SupersetCache(Cache):
 
 
 class ExploreFormDataCache(SupersetCache):
+    """Cache backend for explore form data with legacy key normalization."""
+
     def get(self, *args: Any, **kwargs: Any) -> Optional[Union[str, Markup]]:
         cache = self.cache.get(*args, **kwargs)
 
@@ -187,6 +189,8 @@ class ExploreFormDataCache(SupersetCache):
 
 
 class CacheManager:
+    """Central registry that initializes and exposes all Superset cache instances."""
+
     def __init__(self) -> None:
         super().__init__()
 
