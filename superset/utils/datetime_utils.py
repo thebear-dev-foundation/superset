@@ -36,6 +36,8 @@ DTTM_ALIAS = "__timestamp"
 
 @dataclass
 class DateColumn:
+    """Metadata for a date/time column used in query result post-processing."""
+
     col_label: str
     timestamp_format: str | None = None
     offset: int | None = None

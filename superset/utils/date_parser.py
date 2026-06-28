@@ -672,6 +672,8 @@ def add_ago_to_since(since: str) -> str:
 
 
 class EvalText:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a quoted string literal."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[0]
 
@@ -681,6 +683,8 @@ class EvalText:  # pylint: disable=too-few-public-methods
 
 
 class EvalDateTimeFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a datetime() expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -689,6 +693,8 @@ class EvalDateTimeFunc:  # pylint: disable=too-few-public-methods
 
 
 class EvalDateAddFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a dateadd(datetime, delta, unit) expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -703,6 +709,8 @@ class EvalDateAddFunc:  # pylint: disable=too-few-public-methods
 
 
 class EvalDateDiffFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a datediff(start, end[, unit]) expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -721,6 +729,8 @@ class EvalDateDiffFunc:  # pylint: disable=too-few-public-methods
 
 
 class EvalDateTruncFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a datetrunc(datetime, unit) expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -752,6 +762,8 @@ class EvalDateTruncFunc:  # pylint: disable=too-few-public-methods
 
 
 class EvalLastDayFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that evaluates a lastday(datetime, unit) expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -777,6 +789,8 @@ class EvalLastDayFunc:  # pylint: disable=too-few-public-methods
 
 
 class EvalHolidayFunc:  # pylint: disable=too-few-public-methods
+    """Parse-action node that resolves a holiday expression."""
+
     def __init__(self, tokens: ParseResults) -> None:
         self.value = tokens[1]
 
@@ -911,6 +925,8 @@ def datetime_eval(datetime_expression: str | None = None) -> datetime | None:
 
 
 class DateRangeMigration:  # pylint: disable=too-few-public-methods
+    """Regex patterns used to detect and migrate legacy date-range expressions."""
+
     x_dateunit_in_since = (
         r'"time_range":\s*"\s*[0-9]+\s+(day|week|month|quarter|year)s?\s*\s:\s'
     )
