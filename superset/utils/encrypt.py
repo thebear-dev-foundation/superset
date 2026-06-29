@@ -64,6 +64,8 @@ class ReEncryptStats:
 
 
 class AbstractEncryptedFieldAdapter(ABC):  # pylint: disable=too-few-public-methods
+    """Interface for adapters that produce encrypted SQLAlchemy column types."""
+
     @abstractmethod
     def create(
         self,
@@ -77,6 +79,8 @@ class AbstractEncryptedFieldAdapter(ABC):  # pylint: disable=too-few-public-meth
 class SQLAlchemyUtilsAdapter(  # pylint: disable=too-few-public-methods
     AbstractEncryptedFieldAdapter
 ):
+    """Adapter that delegates encryption to sqlalchemy-utils EncryptedType."""
+
     def create(
         self,
         app_config: Optional[dict[str, Any]],
@@ -90,6 +94,8 @@ class SQLAlchemyUtilsAdapter(  # pylint: disable=too-few-public-methods
 
 
 class EncryptedFieldFactory:
+    """Application-scoped factory for encrypted column types."""
+
     def __init__(self) -> None:
         self._concrete_type_adapter: Optional[AbstractEncryptedFieldAdapter] = None
         self._config: Optional[dict[str, Any]] = None
@@ -136,6 +142,8 @@ class EncryptedFieldFactory:
 
 
 class SecretsMigrator:
+    """Re-encrypts all encrypted ORM columns after a SECRET_KEY rotation."""
+
     def __init__(self, previous_secret_key: str) -> None:
         from superset import db  # pylint: disable=import-outside-toplevel
 
