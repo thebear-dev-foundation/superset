@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 
 class AdhocMetricExpressionType(StrEnum):
+    """Expression type for adhoc metric definitions in the Explore view."""
+
     SIMPLE = "SIMPLE"
     SQL = "SQL"
 
@@ -45,6 +47,8 @@ class SqlExpressionType(StrEnum):
 
 
 class AnnotationType(StrEnum):
+    """Annotation layer types supported by chart visualizations."""
+
     FORMULA = "FORMULA"
     INTERVAL = "INTERVAL"
     EVENT = "EVENT"
@@ -67,6 +71,8 @@ class GenericDataType(IntEnum):
 
 
 class DatasourceType(StrEnum):
+    """Identifier for the kind of datasource backing a chart or query."""
+
     TABLE = "table"
     DATASET = "dataset"
     QUERY = "query"
@@ -76,12 +82,16 @@ class DatasourceType(StrEnum):
 
 
 class LoggerLevel(StrEnum):
+    """Log severity levels used by the Superset event logger."""
+
     INFO = "info"
     WARNING = "warning"
     EXCEPTION = "exception"
 
 
 class HeaderDataType(TypedDict):
+    """Typed dict for alert/report notification header metadata."""
+
     notification_format: str
     owners: list[int]
     notification_type: str
@@ -93,11 +103,15 @@ class HeaderDataType(TypedDict):
 
 
 class DatasourceDict(TypedDict):
+    """Minimal datasource reference used in query and chart payloads."""
+
     type: str  # todo(hugh): update this to be DatasourceType
     id: int | str
 
 
 class AdhocFilterClause(TypedDict, total=False):
+    """Typed dict representing a filter clause emitted by adhoc filter controls."""
+
     clause: str
     expressionType: str
     filterOptionName: str | None
@@ -109,6 +123,8 @@ class AdhocFilterClause(TypedDict, total=False):
 
 
 class QueryObjectFilterClause(TypedDict, total=False):
+    """Typed dict for a normalized filter clause within a QueryObject."""
+
     col: Column
     op: str  # pylint: disable=invalid-name
     val: FilterValues | None
