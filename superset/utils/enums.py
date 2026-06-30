@@ -133,6 +133,8 @@ class QueryObjectFilterClause(TypedDict, total=False):
 
 
 class ExtraFiltersTimeColumnType(StrEnum):
+    """Virtual time-column placeholders injected as extra filters."""
+
     TIME_COL = "__time_col"
     TIME_GRAIN = "__time_grain"
     TIME_ORIGIN = "__time_origin"
@@ -140,6 +142,8 @@ class ExtraFiltersTimeColumnType(StrEnum):
 
 
 class ExtraFiltersReasonType(StrEnum):
+    """Reasons an extra filter may be inapplicable to a datasource."""
+
     NO_TEMPORAL_COLUMN = "no_temporal_column"
     COL_NOT_IN_DATASOURCE = "not_in_datasource"
 
@@ -169,6 +173,8 @@ class FilterOperator(StrEnum):
 
 
 class FilterStringOperators(StrEnum):
+    """String-serialized filter operators used in URL parameters."""
+
     EQUALS = "EQUALS"
     NOT_EQUALS = "NOT_EQUALS"
     LESS_THAN = "LESS_THAN"
@@ -254,16 +260,22 @@ class ReservedUrlParameters(StrEnum):
 
 
 class RowLevelSecurityFilterType(StrEnum):
+    """Types of row-level security filter rules."""
+
     REGULAR = "Regular"
     BASE = "Base"
 
 
 class ColumnTypeSource(Enum):
+    """Source from which column type information was obtained."""
+
     GET_TABLE = 1
     CURSOR_DESCRIPTION = 2
 
 
 class ColumnSpec(NamedTuple):
+    """Resolved column type specification including generic type mapping."""
+
     sqla_type: TypeEngine | str
     generic_type: GenericDataType
     is_dttm: bool
@@ -271,6 +283,8 @@ class ColumnSpec(NamedTuple):
 
 
 class DatasourceName(NamedTuple):
+    """Fully qualified datasource identifier (table, schema, catalog)."""
+
     table: str
     schema: str
     catalog: str | None = None

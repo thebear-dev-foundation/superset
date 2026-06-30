@@ -22,6 +22,8 @@ from flask import Flask
 
 
 class FeatureFlagManager:
+    """Registry for reading and evaluating Superset feature flags."""
+
     def __init__(self) -> None:
         super().__init__()
         self._get_feature_flags_func = None
