@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import warnings
 from typing import Any, Callable, Literal, Optional
 
 from flask import current_app
@@ -29,6 +30,13 @@ from superset.utils import json
 logger = logging.getLogger(__name__)
 
 HashAlgorithm = Literal["md5", "sha256"]
+
+_MD5_DEPRECATION_MSG = (
+    "MD5 is cryptographically broken and disallowed under FIPS 140-2. "
+    "Support for HASH_ALGORITHM='md5' is deprecated and will be removed "
+    "in a future major release. Set HASH_ALGORITHM='sha256' in your "
+    "Superset configuration."
+)
 
 # Hash function lookup table for efficient dispatch
 _HASH_FUNCTIONS: dict[str, Callable[[bytes], str]] = {
@@ -66,6 +74,9 @@ def hash_from_str(val: str, algorithm: Optional[HashAlgorithm] = None) -> str:
     """
     if algorithm is None:
         algorithm = get_hash_algorithm()
+
+    if algorithm == "md5":
+        warnings.warn(_MD5_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
 
     hash_func = _HASH_FUNCTIONS.get(algorithm)
     if hash_func is None:

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import warnings
 from typing import Any, Callable, Optional, TYPE_CHECKING, Union
 
 from flask import current_app, Flask
@@ -71,6 +72,15 @@ class ConfigurableHashMethod:
             ValueError: If HASH_ALGORITHM is set to an unsupported value
         """
         algorithm = current_app.config["HASH_ALGORITHM"]
+        if algorithm == "md5":
+            warnings.warn(
+                "MD5 is cryptographically broken and disallowed under FIPS 140-2. "
+                "Support for HASH_ALGORITHM='md5' is deprecated and will be "
+                "removed in a future major release. Set HASH_ALGORITHM='sha256' "
+                "in your Superset configuration.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         hash_func = _HASH_METHODS.get(algorithm)
         if hash_func is None:
             raise ValueError(f"Unsupported hash algorithm: {algorithm}")
