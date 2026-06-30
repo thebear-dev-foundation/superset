@@ -211,7 +211,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 # Cache will re-warm naturally within 24-48 hours.
 #
 # For FedRAMP compliance, set to 'sha256'
-# For backward compatibility with existing deployments, keep as 'md5'
+# MD5 is deprecated and will be removed in a future major release.
 HASH_ALGORITHM: Literal["md5", "sha256"] = "sha256"
 
 # Fallback hash algorithms for UUID lookup (backward compatibility)
@@ -223,7 +223,7 @@ HASH_ALGORITHM: Literal["md5", "sha256"] = "sha256"
 #   2. MD5 UUID (fallback for legacy entries)
 #
 # Set to empty list to disable fallback (strict mode - only use HASH_ALGORITHM)
-HASH_ALGORITHM_FALLBACKS: list[Literal["md5", "sha256"]] = ["md5"]
+HASH_ALGORITHM_FALLBACKS: list[Literal["md5", "sha256"]] = []
 
 # ---------------------------------------------------------
 
