@@ -105,6 +105,7 @@ class SupersetCache(Cache):
         source_check: bool | None = None,
         args_to_ignore: Any | None = None,
     ) -> Callable[..., Any]:
+        """Memoize decorator using the configured hash algorithm."""
         return super().memoize(
             timeout=timeout,
             make_name=make_name,
@@ -131,6 +132,7 @@ class SupersetCache(Cache):
         source_check: bool | None = None,
         response_hit_indication: bool | None = False,
     ) -> Callable[..., Any]:
+        """Cache decorator using the configured hash algorithm."""
         return super().cached(
             timeout=timeout,
             key_prefix=key_prefix,
@@ -169,6 +171,7 @@ class ExploreFormDataCache(SupersetCache):
     """Cache backend for explore form data with legacy key normalization."""
 
     def get(self, *args: Any, **kwargs: Any) -> Optional[Union[str, Markup]]:
+        """Retrieve cached form data, normalizing legacy key names."""
         cache = self.cache.get(*args, **kwargs)
 
         if not cache:
@@ -231,6 +234,7 @@ class CacheManager:
         cache.init_app(app, cache_config)
 
     def init_app(self, app: Flask) -> None:
+        """Initialize all cache instances from Flask app configuration."""
         self._init_cache(app, self._cache, "CACHE_CONFIG")
         self._init_cache(app, self._data_cache, "DATA_CACHE_CONFIG")
         self._init_cache(app, self._thumbnail_cache, "THUMBNAIL_CACHE_CONFIG")
