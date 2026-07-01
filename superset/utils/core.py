@@ -26,6 +26,7 @@ import os
 import platform
 import re
 import signal
+import stat
 import tempfile
 import threading
 import traceback
@@ -895,11 +896,18 @@ def create_ssl_cert_file(certificate: str) -> str:
     cert_dir = app.config["SSL_CERT_PATH"]
     path = cert_dir if cert_dir else tempfile.gettempdir()
     path = os.path.join(path, filename)
-    if not os.path.exists(path):
+    try:
         # Validate certificate prior to persisting to temporary directory
         parse_ssl_cert(certificate)
-        with open(path, "w") as cert_file:
+        fd = os.open(
+            path,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            stat.S_IRUSR | stat.S_IWUSR,
+        )
+        with os.fdopen(fd, "w") as cert_file:
             cert_file.write(certificate)
+    except FileExistsError:
+        pass
     return path
 
 
