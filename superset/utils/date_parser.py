@@ -678,6 +678,7 @@ class EvalText:  # pylint: disable=too-few-public-methods
         self.value = tokens[0]
 
     def eval(self) -> str:
+        """Evaluate the node and return the parsed string literal."""
         # strip quotes
         return self.value[1:-1]
 
@@ -689,6 +690,7 @@ class EvalDateTimeFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> datetime:
+        """Evaluate the node and return the computed datetime."""
         return parse_human_datetime(self.value.eval())
 
 
@@ -699,6 +701,7 @@ class EvalDateAddFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> datetime:
+        """Evaluate the node and return the datetime with the delta applied."""
         dttm_expression, delta, unit = self.value
         dttm = dttm_expression.eval()
         delta = delta.eval() if hasattr(delta, "eval") else delta
@@ -715,6 +718,7 @@ class EvalDateDiffFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> int:
+        """Evaluate the node and return the difference between two dates."""
         if len(self.value) == 2:
             _dttm_from, _dttm_to = self.value
             return (_dttm_to.eval() - _dttm_from.eval()).days
@@ -735,6 +739,7 @@ class EvalDateTruncFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> datetime:
+        """Evaluate the node and return the truncated datetime."""
         dttm_expression, unit = self.value
         dttm = dttm_expression.eval()
         if unit == "year":
@@ -768,6 +773,7 @@ class EvalLastDayFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> datetime:
+        """Evaluate the node and return the last day of the given period."""
         dttm_expression, unit = self.value
         dttm = dttm_expression.eval()
         if unit == "year":

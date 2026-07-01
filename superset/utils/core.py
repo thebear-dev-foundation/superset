@@ -336,6 +336,7 @@ class SigalrmTimeout:
         self.error_message = error_message
 
     def handle_timeout(self, signum: int, frame: Any) -> None:
+        """Handle SIGALRM by raising SupersetTimeoutException."""
         logger.error("Process timed out", exc_info=True)
         raise SupersetTimeoutException(
             error_type=SupersetErrorType.BACKEND_TIMEOUT_ERROR,

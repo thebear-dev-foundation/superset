@@ -286,22 +286,27 @@ class CacheManager:
 
     @property
     def data_cache(self) -> Cache:
+        """Return the data-result cache instance."""
         return self._data_cache
 
     @property
     def cache(self) -> Cache:
+        """Return the default cache instance."""
         return self._cache
 
     @property
     def thumbnail_cache(self) -> Cache:
+        """Return the thumbnail cache instance."""
         return self._thumbnail_cache
 
     @property
     def filter_state_cache(self) -> Cache:
+        """Return the filter state cache instance."""
         return self._filter_state_cache
 
     @property
     def explore_form_data_cache(self) -> Cache:
+        """Return the explore form data cache instance."""
         return self._explore_form_data_cache
 
     @property
