@@ -33,7 +33,7 @@ import uuid
 import zlib
 from collections.abc import Iterable, Iterator, Sequence
 from timeit import default_timer
-from types import TracebackType
+from types import FrameType, TracebackType
 from typing import (
     Any,
     Callable,
@@ -284,11 +284,11 @@ def error_msg_from_exception(ex: Exception) -> str:
     The latter version is parsed correctly by this function.
     """
     msg = ""
-    if hasattr(ex, "message"):
-        if isinstance(ex.message, dict):
-            msg = ex.message.get("message")  # type: ignore
-        elif ex.message:
-            msg = ex.message
+    message = getattr(ex, "message", None)  # noqa: B009
+    if isinstance(message, dict):
+        msg = message.get("message", "")
+    elif message:
+        msg = message
     return str(msg) or str(ex)
 
 
@@ -335,7 +335,7 @@ class SigalrmTimeout:
         self.seconds = seconds
         self.error_message = error_message
 
-    def handle_timeout(self, signum: int, frame: Any) -> None:
+    def handle_timeout(self, signum: int, frame: FrameType | None) -> None:
         logger.error("Process timed out", exc_info=True)
         raise SupersetTimeoutException(
             error_type=SupersetErrorType.BACKEND_TIMEOUT_ERROR,
@@ -353,7 +353,12 @@ class SigalrmTimeout:
             logger.warning("timeout can't be used in the current context")
             logger.exception(ex)
 
-    def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
+    def __exit__(
+        self,
+        type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         try:
             signal.alarm(0)
         except ValueError as ex:
@@ -387,7 +392,12 @@ class TimerTimeout:
     def __enter__(self) -> None:
         self.timer.start()
 
-    def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
+    def __exit__(
+        self,
+        type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         self.timer.cancel()
         if type is KeyboardInterrupt:  # raised by _thread.interrupt_main
             raise SupersetTimeoutException(
@@ -995,7 +1005,7 @@ def get_column_name_from_column(column: Column) -> str | None:
     """
     if is_adhoc_column(column):
         return None
-    return column  # type: ignore
+    return column if isinstance(column, str) else None
 
 
 def get_column_names_from_columns(columns: list[Column]) -> list[str]:
