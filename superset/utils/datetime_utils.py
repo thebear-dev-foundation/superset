@@ -56,6 +56,7 @@ class DateColumn:
         offset: int | None,
         time_shift: str | None,
     ) -> DateColumn:
+        """Build a ``DateColumn`` using the legacy ``__timestamp`` alias."""
         return cls(
             timestamp_format=timestamp_format,
             offset=offset,

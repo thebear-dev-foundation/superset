@@ -252,6 +252,7 @@ class ReservedUrlParameters(StrEnum):
 
     @staticmethod
     def is_standalone_mode() -> bool | None:
+        """Return whether the current request is in standalone mode."""
         standalone_param = request.args.get(ReservedUrlParameters.STANDALONE.value)
         standalone: bool | None = bool(
             standalone_param and standalone_param != "false" and standalone_param != "0"

@@ -801,6 +801,7 @@ class EvalHolidayFunc:  # pylint: disable=too-few-public-methods
         self.value = tokens[1]
 
     def eval(self) -> datetime:
+        """Resolve a holiday expression to its corresponding datetime."""
         holiday = self.value[0].eval()
         dttm, country = [None, None]
         if len(self.value) >= 2:
