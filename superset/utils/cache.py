@@ -74,6 +74,7 @@ def set_and_log_cache(
     cache_timeout: int | None = None,
     datasource_uid: str | None = None,
 ) -> None:
+    """Store *cache_value* under *cache_key* and log the operation."""
     if isinstance(cache_instance.cache, NullCache):
         return
 

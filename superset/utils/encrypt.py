@@ -73,7 +73,7 @@ class AbstractEncryptedFieldAdapter(ABC):  # pylint: disable=too-few-public-meth
         *args: list[Any],
         **kwargs: Optional[dict[str, Any]],
     ) -> TypeDecorator:
-        pass
+        """Return an encrypted SQLAlchemy ``TypeDecorator`` for the given config."""
 
 
 class SQLAlchemyUtilsAdapter(  # pylint: disable=too-few-public-methods
@@ -87,6 +87,7 @@ class SQLAlchemyUtilsAdapter(  # pylint: disable=too-few-public-methods
         *args: list[Any],
         **kwargs: Optional[dict[str, Any]],
     ) -> TypeDecorator:
+        """Create an ``EncryptedType`` using the app's ``SECRET_KEY``."""
         if app_config:
             return EncryptedType(*args, lambda: app_config["SECRET_KEY"], **kwargs)
 
@@ -138,6 +139,7 @@ class EncryptedFieldFactory:
 
     @staticmethod
     def created_by_enc_field_factory(field: TypeDecorator) -> bool:
+        """Return whether *field* was produced by this factory."""
         return getattr(field, ENC_ADAPTER_TAG_ATTR_NAME, False)
 
 

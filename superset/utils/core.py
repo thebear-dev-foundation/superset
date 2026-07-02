@@ -442,6 +442,7 @@ def simple_filter_to_adhoc(
     filter_clause: QueryObjectFilterClause,
     clause: str = "where",
 ) -> AdhocFilterClause:
+    """Convert a simple filter clause into an adhoc filter dictionary."""
     result: AdhocFilterClause = {
         "clause": clause.upper(),
         "expressionType": "SIMPLE",
@@ -457,6 +458,7 @@ def simple_filter_to_adhoc(
 
 
 def form_data_to_adhoc(form_data: dict[str, Any], clause: str) -> AdhocFilterClause:
+    """Convert a raw SQL WHERE/HAVING clause from form data into an adhoc filter."""
     if clause not in ("where", "having"):
         raise ValueError(__("Unsupported clause type: %(clause)s", clause=clause))
     result: AdhocFilterClause = {
@@ -582,6 +584,7 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
 
 
 def merge_extra_filters(form_data: dict[str, Any]) -> None:  # noqa: C901
+    """Merge legacy ``extra_filters`` into ``adhoc_filters`` on *form_data*."""
     # extra_filters are temporary/contextual filters (using the legacy constructs)
     # that are external to the slice definition. We use those for dynamic
     # interactive filters.
