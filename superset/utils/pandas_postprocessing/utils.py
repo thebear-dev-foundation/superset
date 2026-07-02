@@ -52,7 +52,7 @@ NUMPY_FUNCTIONS: dict[str, Callable[..., Any]] = {
     "var": np.var,
 }
 
-DENYLIST_ROLLING_FUNCTIONS = (
+ALLOWLIST_ROLLING_FUNCTIONS = (
     "count",
     "corr",
     "cov",

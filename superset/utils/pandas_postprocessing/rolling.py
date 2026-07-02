@@ -22,7 +22,7 @@ from pandas import DataFrame
 from superset.exceptions import InvalidPostProcessingError
 from superset.utils.pandas_postprocessing.utils import (
     _append_columns,
-    DENYLIST_ROLLING_FUNCTIONS,
+    ALLOWLIST_ROLLING_FUNCTIONS,
     validate_column_args,
 )
 
@@ -77,7 +77,7 @@ def rolling(  # pylint: disable=too-many-arguments
         kwargs["win_type"] = win_type
 
     df_rolling = df_rolling.rolling(**kwargs)
-    if rolling_type not in DENYLIST_ROLLING_FUNCTIONS or not hasattr(
+    if rolling_type not in ALLOWLIST_ROLLING_FUNCTIONS or not hasattr(
         df_rolling, rolling_type
     ):
         raise InvalidPostProcessingError(
