@@ -682,32 +682,67 @@ def user_label(user: User) -> str | None:
 
 
 def is_adhoc_metric(metric: Metric) -> TypeGuard[AdhocMetric]:
+    """Narrow a Metric to AdhocMetric by checking for an ``expressionType`` key.
+
+    :param metric: metric object to check
+    :return: ``True`` if *metric* is a dict containing ``expressionType``
+    """
     return isinstance(metric, dict) and "expressionType" in metric
 
 
 def is_adhoc_column(column: Column) -> TypeGuard[AdhocColumn]:
+    """Narrow a Column to AdhocColumn by checking for ``label`` and ``sqlExpression``.
+
+    :param column: column object to check
+    :return: ``True`` if *column* is a dict with both ``label`` and ``sqlExpression``
+    """
     return isinstance(column, dict) and ({"label", "sqlExpression"}).issubset(
         column.keys()
     )
 
 
 def is_base_axis(column: Column) -> bool:
+    """Check whether *column* is a base-axis adhoc column.
+
+    :param column: column object to check
+    :return: ``True`` if the column is adhoc with ``columnType == "BASE_AXIS"``
+    """
     return is_adhoc_column(column) and column.get("columnType") == "BASE_AXIS"
 
 
 def get_base_axis_columns(columns: list[Column] | None) -> list[Column]:
+    """Filter *columns* to only those that are base-axis columns.
+
+    :param columns: list of columns to filter, or ``None``
+    :return: list of columns where :func:`is_base_axis` is ``True``
+    """
     return [column for column in columns or [] if is_base_axis(column)]
 
 
 def get_non_base_axis_columns(columns: list[Column] | None) -> list[Column]:
+    """Filter *columns* to only those that are **not** base-axis columns.
+
+    :param columns: list of columns to filter, or ``None``
+    :return: list of columns where :func:`is_base_axis` is ``False``
+    """
     return [column for column in columns or [] if not is_base_axis(column)]
 
 
 def get_base_axis_labels(columns: list[Column] | None) -> tuple[str, ...]:
+    """Extract label strings from all base-axis columns.
+
+    :param columns: list of columns to extract labels from, or ``None``
+    :return: tuple of string labels for each base-axis column
+    """
     return tuple(get_column_name(column) for column in get_base_axis_columns(columns))
 
 
 def get_x_axis_label(columns: list[Column] | None) -> str | None:
+    """Return the label of the first base-axis column, or ``None``.
+
+    :param columns: list of columns to search, or ``None``
+    :return: first base-axis label string, or ``None`` if there are none
+    """
     labels = get_base_axis_labels(columns)
     return labels[0] if labels else None
 
@@ -776,6 +811,12 @@ def get_column_names(
     columns: Sequence[Column] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> list[str]:
+    """Extract label strings from a sequence of columns.
+
+    :param columns: sequence of column objects, or ``None``
+    :param verbose_map: optional mapping from raw names to verbose names
+    :return: list of non-empty label strings
+    """
     return [
         column
         for column in [get_column_name(column, verbose_map) for column in columns or []]
@@ -787,6 +828,12 @@ def get_metric_names(
     metrics: Sequence[Metric] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> list[str]:
+    """Extract label strings from a sequence of metrics.
+
+    :param metrics: sequence of metric objects, or ``None``
+    :param verbose_map: optional mapping from raw names to verbose names
+    :return: list of non-empty label strings
+    """
     return [
         metric
         for metric in [get_metric_name(metric, verbose_map) for metric in metrics or []]
@@ -798,11 +845,22 @@ def get_first_metric_name(
     metrics: Sequence[Metric] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> str | None:
+    """Return the label of the first metric, or ``None``.
+
+    :param metrics: sequence of metric objects, or ``None``
+    :param verbose_map: optional mapping from raw names to verbose names
+    :return: first metric label string, or ``None`` if there are none
+    """
     metric_labels = get_metric_names(metrics, verbose_map)
     return metric_labels[0] if metric_labels else None
 
 
 def ensure_path_exists(path: str) -> None:
+    """Create a directory path if it does not already exist.
+
+    :param path: filesystem path to create
+    :raises OSError: if creation fails for reasons other than the path already existing
+    """
     try:
         os.makedirs(path)
     except OSError as ex:
@@ -813,6 +871,13 @@ def ensure_path_exists(path: str) -> None:
 def convert_legacy_filters_into_adhoc(
     form_data: FormData,
 ) -> None:
+    """Migrate legacy ``filters``, ``where``, and ``having`` keys to adhoc format.
+
+    Mutates *form_data* in place, converting old-style filter entries into
+    ``adhoc_filters`` and removing the legacy keys.
+
+    :param form_data: mutable form data dict to migrate
+    """
     if not form_data.get("adhoc_filters"):
         adhoc_filters: list[AdhocFilterClause] = []
         form_data["adhoc_filters"] = adhoc_filters
