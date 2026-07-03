@@ -26,7 +26,6 @@ import platform
 import re
 import signal
 import stat
-import tempfile
 import threading
 import traceback
 import uuid
@@ -889,13 +888,15 @@ def create_ssl_cert_file(certificate: str) -> str:
     :param certificate: The contents of the certificate
     :return: The path to the certificate file
     :raises CertificateException: If certificate is not valid/unparseable
+    :raises IOError: If an existing file at the target path is a symlink
     """
     filename = f"{hash_from_str(certificate)}.crt"
     cert_dir = app.config["SSL_CERT_PATH"]
-    path = cert_dir if cert_dir else tempfile.gettempdir()
-    path = os.path.join(path, filename)
+    if not cert_dir:
+        cert_dir = os.path.join(app.config["DATA_DIR"], "certs")
+    os.makedirs(cert_dir, mode=0o700, exist_ok=True)
+    path = os.path.join(cert_dir, filename)
     try:
-        # Validate certificate prior to persisting to temporary directory
         parse_ssl_cert(certificate)
         fd = os.open(
             path,
@@ -905,7 +906,10 @@ def create_ssl_cert_file(certificate: str) -> str:
         with os.fdopen(fd, "w") as cert_file:
             cert_file.write(certificate)
     except FileExistsError:
-        pass
+        if os.path.islink(path):
+            raise IOError(  # noqa: UP024
+                f"Certificate path {path} is a symlink; refusing to trust it"
+            ) from None
     return path
 
 
