@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import _thread
 import collections
-import errno
 import logging
 import os
 import platform
@@ -39,7 +38,6 @@ from typing import (
     Any,
     Callable,
     cast,
-    Optional,
     TYPE_CHECKING,
     TypeVar,
 )
@@ -803,11 +801,7 @@ def get_first_metric_name(
 
 
 def ensure_path_exists(path: str) -> None:
-    try:
-        os.makedirs(path)
-    except OSError as ex:
-        if not (os.path.isdir(path) and ex.errno == errno.EEXIST):
-            raise
+    os.makedirs(path, exist_ok=True)
 
 
 def convert_legacy_filters_into_adhoc(
@@ -1049,7 +1043,7 @@ def get_column_names_from_metrics(metrics: list[Metric]) -> list[str]:
     return [col for col in map(get_column_name_from_metric, metrics) if col]
 
 
-def map_sql_type_to_inferred_type(sql_type: Optional[str]) -> str:
+def map_sql_type_to_inferred_type(sql_type: str | None) -> str:
     """
     Map a SQL type to a type string recognized by pandas' `infer_objects` method.
 
@@ -1140,7 +1134,7 @@ def extract_dataframe_dtypes(
         series = df[column]
         inferred_type: str = ""
         if series.isna().all():
-            sql_type: Optional[str] = ""
+            sql_type: str | None = ""
             if datasource and hasattr(datasource, "columns_types"):
                 if column in datasource.columns_types:
                     sql_type = datasource.columns_types.get(column)
@@ -1284,7 +1278,7 @@ def parse_boolean_string(bool_str: str | None) -> bool:
     """
     if bool_str is None:
         return False
-    return bool_str.lower() in ("y", "Y", "yes", "True", "t", "true", "On", "on", "1")
+    return bool_str.lower() in ("y", "yes", "t", "true", "on", "1")
 
 
 def apply_max_row_limit(
