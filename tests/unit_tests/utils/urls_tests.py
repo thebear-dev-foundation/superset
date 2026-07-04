@@ -38,3 +38,13 @@ def test_convert_dashboard_link() -> None:
 def test_convert_dashboard_link_with_integer() -> None:
     test_url = modify_url_query(EXPLORE_DASHBOARD_LINK, standalone=0)
     assert test_url == "http://localhost:9000/superset/dashboard/3/?standalone=0"
+
+
+def test_preserves_repeated_query_params() -> None:
+    test_url = modify_url_query("http://h/p?f=a&f=b&g=1", standalone="3")
+    assert test_url == "http://h/p?f=a&f=b&g=1&standalone=3"
+
+
+def test_encodes_param_keys() -> None:
+    test_url = modify_url_query("http://h/p?a%20b=1")
+    assert test_url == "http://h/p?a%20b=1"
