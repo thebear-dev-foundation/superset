@@ -679,32 +679,39 @@ def user_label(user: User) -> str | None:
 
 
 def is_adhoc_metric(metric: Metric) -> TypeGuard[AdhocMetric]:
+    """Return whether *metric* is an ad-hoc metric dictionary."""
     return isinstance(metric, dict) and "expressionType" in metric
 
 
 def is_adhoc_column(column: Column) -> TypeGuard[AdhocColumn]:
+    """Return whether *column* is an ad-hoc column dictionary."""
     return isinstance(column, dict) and ({"label", "sqlExpression"}).issubset(
         column.keys()
     )
 
 
 def is_base_axis(column: Column) -> bool:
+    """Return whether *column* is an ad-hoc column typed as the base axis."""
     return is_adhoc_column(column) and column.get("columnType") == "BASE_AXIS"
 
 
 def get_base_axis_columns(columns: list[Column] | None) -> list[Column]:
+    """Filter *columns* to only those marked as the base axis."""
     return [column for column in columns or [] if is_base_axis(column)]
 
 
 def get_non_base_axis_columns(columns: list[Column] | None) -> list[Column]:
+    """Filter *columns* to only those *not* marked as the base axis."""
     return [column for column in columns or [] if not is_base_axis(column)]
 
 
 def get_base_axis_labels(columns: list[Column] | None) -> tuple[str, ...]:
+    """Return display labels for all base-axis columns."""
     return tuple(get_column_name(column) for column in get_base_axis_columns(columns))
 
 
 def get_x_axis_label(columns: list[Column] | None) -> str | None:
+    """Return the label of the first base-axis column, or *None* if absent."""
     labels = get_base_axis_labels(columns)
     return labels[0] if labels else None
 
@@ -773,6 +780,7 @@ def get_column_names(
     columns: Sequence[Column] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> list[str]:
+    """Extract display labels from a sequence of columns, dropping empty names."""
     return [
         column
         for column in [get_column_name(column, verbose_map) for column in columns or []]
@@ -784,6 +792,7 @@ def get_metric_names(
     metrics: Sequence[Metric] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> list[str]:
+    """Extract display labels from a sequence of metrics, dropping empty names."""
     return [
         metric
         for metric in [get_metric_name(metric, verbose_map) for metric in metrics or []]
@@ -795,17 +804,20 @@ def get_first_metric_name(
     metrics: Sequence[Metric] | None,
     verbose_map: dict[str, Any] | None = None,
 ) -> str | None:
+    """Return the label of the first metric, or *None* if the sequence is empty."""
     metric_labels = get_metric_names(metrics, verbose_map)
     return metric_labels[0] if metric_labels else None
 
 
 def ensure_path_exists(path: str) -> None:
+    """Create *path* and any missing parent directories if they do not exist."""
     os.makedirs(path, exist_ok=True)
 
 
 def convert_legacy_filters_into_adhoc(
     form_data: FormData,
 ) -> None:
+    """Migrate legacy *where*/*having*/*filters* keys in *form_data* to adhoc filters."""
     if not form_data.get("adhoc_filters"):
         adhoc_filters: list[AdhocFilterClause] = []
         form_data["adhoc_filters"] = adhoc_filters
