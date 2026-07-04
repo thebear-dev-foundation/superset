@@ -89,12 +89,16 @@ def df_to_escaped_csv(df: pd.DataFrame, **kwargs: Any) -> str | None:
     # Escape csv headers
     df = df.rename(columns=escape_values)
 
-    # Escape csv values
+    # Escape csv values.
+    #
+    # Map by label to avoid mixing positional offsets with label-based
+    # accessors: a DataFrame whose index is not a default ``RangeIndex``
+    # (common after filtering, sorting, ``groupby``, pivoting, or resampling)
+    # would otherwise leave the dangerous rows unescaped and append escaped
+    # duplicates keyed ``0, 1, 2, ...``.
     for name, column in df.items():
         if column.dtype == np.dtype(object):
-            for idx, value in enumerate(column.values):
-                if isinstance(value, str):
-                    df.at[idx, name] = escape_value(value)
+            df[name] = column.map(escape_values)
 
     return df.to_csv(escapechar="\\", **kwargs)
 

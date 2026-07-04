@@ -222,6 +222,30 @@ def test_df_to_escaped_csv_preserves_numeric_columns():
     assert rows[2] == ["safe", "-20"]
 
 
+def test_df_to_escaped_csv_non_range_index():
+    """
+    Dangerous cells are escaped by label even when the DataFrame index is not a
+    default ``RangeIndex`` (e.g. after filtering/sorting/groupby), and no
+    spurious rows are appended.
+    """
+    df = pd.DataFrame(
+        data={"a": ["=cmd()", "safe", "@evil"]},
+        index=[5, 6, 7],
+    )
+
+    escaped_csv_str = df_to_escaped_csv(
+        df,
+        encoding="utf8",
+        index=False,
+        header=False,
+    )
+
+    rows = escaped_csv_str.strip().split("\n")
+
+    # Every dangerous cell is escaped and the row count is unchanged.
+    assert rows == ["'=cmd()", "safe", "'@evil"]
+
+
 def test_get_chart_dataframe_returns_none_when_no_content(
     monkeypatch: pytest.MonkeyPatch,
 ):
