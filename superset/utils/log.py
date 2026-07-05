@@ -222,7 +222,7 @@ class AbstractEventLogger(ABC):
                     db.session.add(actual_user)
                     user_id = get_user_id()
             except (SQLAlchemyError, AttributeError) as ex:
-                logging.warning(
+                logger.warning(
                     "Failed to add user to db session: %s",
                     ex,
                     exc_info=True,
@@ -368,7 +368,7 @@ def get_event_logger_from_cfg_value(cfg_value: Any) -> AbstractEventLogger:
     """
     result: Any = cfg_value
     if inspect.isclass(cfg_value):
-        logging.warning(
+        logger.warning(
             textwrap.dedent(
                 """
                 In superset private config, EVENT_LOGGER has been assigned a class
@@ -391,7 +391,7 @@ def get_event_logger_from_cfg_value(cfg_value: Any) -> AbstractEventLogger:
             "of superset.utils.log.AbstractEventLogger."
         )
 
-    logging.debug("Configured event logger of type %s", type(result))
+    logger.debug("Configured event logger of type %s", type(result))
     return cast(AbstractEventLogger, result)
 
 
@@ -442,17 +442,16 @@ class DBEventLogger(AbstractEventLogger):
         try:
             db.session.bulk_save_objects(logs)
             db.session.commit()  # pylint: disable=consider-using-transaction
-        except SQLAlchemyError as ex:
+        except SQLAlchemyError:
             # Log errors but don't raise - logging failures should not break the
             # application. Common in tests where the session may be in prepared state or
             # db is locked
-            logging.error("DBEventLogger failed to log event(s)")
-            logging.exception(ex)
+            logger.exception("DBEventLogger failed to log event(s)")
             # Rollback to clean up the session state
             try:
                 db.session.rollback()  # pylint: disable=consider-using-transaction
             except SQLAlchemyError:
-                logging.error(
+                logger.error(
                     "DBEventLogger failed to rollback the session after failure"
                 )
 
