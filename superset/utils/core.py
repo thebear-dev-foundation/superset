@@ -284,7 +284,7 @@ def error_msg_from_exception(ex: Exception) -> str:
     msg = ""
     if hasattr(ex, "message"):
         if isinstance(ex.message, dict):
-            msg = ex.message.get("message")  # type: ignore
+            msg = cast(str, ex.message.get("message"))
         elif ex.message:
             msg = ex.message
     return str(msg) or str(ex)
@@ -298,7 +298,7 @@ def readfile(file_path: str) -> str:
     :raises FileNotFoundError: If *file_path* does not exist.
     :raises OSError: If the file cannot be opened or read.
     """
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
     return content
 
@@ -501,16 +501,12 @@ def _create_temporal_filter(
     return new_filter
 
 
-def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
-    """
-    Merge extra form data (appends and overrides) into the main payload
-    and add applied time extras to the payload.
-    """
-    filter_keys = ["filters", "adhoc_filters"]
-    extra_form_data = form_data.pop("extra_form_data", {})
-    append_filters: list[QueryObjectFilterClause] = extra_form_data.get("filters", None)
-
-    # merge append extras
+def _merge_append_form_data(
+    form_data: dict[str, Any],
+    extra_form_data: dict[str, Any],
+    filter_keys: list[str],
+) -> None:
+    """Merge the append-style extra form data keys into *form_data*."""
     for key in [key for key in EXTRA_FORM_DATA_APPEND_KEYS if key not in filter_keys]:
         extra_value = extra_form_data.get(key, {})
         form_value = form_data.get(key, {})
@@ -518,6 +514,12 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
         if form_value:
             form_data[key] = form_value
 
+
+def _merge_override_form_data(
+    form_data: dict[str, Any],
+    extra_form_data: dict[str, Any],
+) -> None:
+    """Merge the override-style extra form data into *form_data*."""
     # map regular extras that apply to form data properties
     for src_key, target_key in EXTRA_FORM_DATA_OVERRIDE_REGULAR_MAPPINGS.items():
         value = extra_form_data.get(src_key)
@@ -533,6 +535,13 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
     if extras:
         form_data["extras"] = extras
 
+
+def _merge_append_adhoc_filters(
+    form_data: dict[str, Any],
+    extra_form_data: dict[str, Any],
+    append_filters: list[QueryObjectFilterClause],
+) -> list[AdhocFilterClause]:
+    """Merge append/extra adhoc filters into *form_data* and return them."""
     adhoc_filters: list[AdhocFilterClause] = form_data.get("adhoc_filters", [])
     form_data["adhoc_filters"] = adhoc_filters
     append_adhoc_filters: list[AdhocFilterClause] = extra_form_data.get(
@@ -549,7 +558,15 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
                     for fltr in append_filters
                     if fltr
                 )
+    return adhoc_filters
 
+
+def _merge_temporal_filters(
+    form_data: dict[str, Any],
+    extra_form_data: dict[str, Any],
+    adhoc_filters: list[AdhocFilterClause],
+) -> None:
+    """Apply temporal-range overrides from extra form data to *adhoc_filters*."""
     granularity_sqla_override = extra_form_data.get("granularity_sqla")
     time_range = form_data.get("time_range")
     chart_has_granularity_sqla = bool(form_data.get("granularity_sqla"))
@@ -580,7 +597,72 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:  # noqa: C901
         adhoc_filters.append(new_temporal_filter)
 
 
-def merge_extra_filters(form_data: dict[str, Any]) -> None:  # noqa: C901
+def merge_extra_form_data(form_data: dict[str, Any]) -> None:
+    """
+    Merge extra form data (appends and overrides) into the main payload
+    and add applied time extras to the payload.
+    """
+    filter_keys = ["filters", "adhoc_filters"]
+    extra_form_data = form_data.pop("extra_form_data", {})
+    append_filters: list[QueryObjectFilterClause] = extra_form_data.get("filters", None)
+
+    _merge_append_form_data(form_data, extra_form_data, filter_keys)
+    _merge_override_form_data(form_data, extra_form_data)
+    adhoc_filters = _merge_append_adhoc_filters(
+        form_data, extra_form_data, append_filters
+    )
+    _merge_temporal_filters(form_data, extra_form_data, adhoc_filters)
+
+
+def _extra_filter_key(f: dict[str, Any]) -> str:
+    """Return a key identifying a filter by its column/subject and operator."""
+    if "expressionType" in f:
+        return f"{f['subject']}__{f['operator']}"
+
+    return f"{f['col']}__{f['op']}"
+
+
+def _collect_existing_filters(
+    adhoc_filters: list[Any],
+) -> dict[str, Any]:
+    """Map existing simple adhoc filters by their key to their comparator."""
+    existing_filters = {}
+    for existing in adhoc_filters:
+        if (
+            existing["expressionType"] == "SIMPLE"
+            and existing.get("comparator") is not None
+            and existing.get("subject") is not None
+        ):
+            existing_filters[_extra_filter_key(existing)] = existing["comparator"]
+    return existing_filters
+
+
+def _merge_extra_column_filter(
+    filtr: dict[str, Any],
+    adhoc_filters: list[Any],
+    existing_filters: dict[str, Any],
+) -> None:
+    """Append *filtr* to *adhoc_filters* unless an equal filter already exists."""
+    adhoc_filter = simple_filter_to_adhoc(cast(QueryObjectFilterClause, filtr))
+    filter_key = _extra_filter_key(filtr)
+    if filter_key not in existing_filters:
+        # Filter not found, add it
+        adhoc_filters.append(adhoc_filter)
+        return
+
+    existing_value = existing_filters[filter_key]
+    if isinstance(filtr["val"], list):
+        # Add filters for unequal lists; order doesn't matter
+        if not isinstance(existing_value, list) or set(existing_value) != set(
+            filtr["val"]
+        ):
+            adhoc_filters.append(adhoc_filter)
+    elif filtr["val"] != existing_value:
+        # Do not add filter if same value already exists
+        adhoc_filters.append(adhoc_filter)
+
+
+def merge_extra_filters(form_data: dict[str, Any]) -> None:
     """Merge legacy ``extra_filters`` into ``adhoc_filters`` on *form_data*."""
     # extra_filters are temporary/contextual filters (using the legacy constructs)
     # that are external to the slice definition. We use those for dynamic
@@ -590,64 +672,35 @@ def merge_extra_filters(form_data: dict[str, Any]) -> None:  # noqa: C901
     adhoc_filters = form_data.get("adhoc_filters", [])
     form_data["adhoc_filters"] = adhoc_filters
     merge_extra_form_data(form_data)
-    if "extra_filters" in form_data:
-        # __form and __to are special extra_filters that target time
-        # boundaries. The rest of extra_filters are simple
-        # [column_name in list_of_values]. `__` prefix is there to avoid
-        # potential conflicts with column that would be named `from` or `to`
-        date_options = {
-            "__time_range": "time_range",
-            "__time_col": "granularity_sqla",
-            "__time_grain": "time_grain_sqla",
-        }
+    if "extra_filters" not in form_data:
+        return
 
-        # Grab list of existing filters 'keyed' on the column and operator
+    # __form and __to are special extra_filters that target time
+    # boundaries. The rest of extra_filters are simple
+    # [column_name in list_of_values]. `__` prefix is there to avoid
+    # potential conflicts with column that would be named `from` or `to`
+    date_options = {
+        "__time_range": "time_range",
+        "__time_col": "granularity_sqla",
+        "__time_grain": "time_grain_sqla",
+    }
 
-        def get_filter_key(f: dict[str, Any]) -> str:
-            if "expressionType" in f:
-                return f"{f['subject']}__{f['operator']}"
+    # Grab list of existing filters 'keyed' on the column and operator
+    existing_filters = _collect_existing_filters(adhoc_filters)
 
-            return f"{f['col']}__{f['op']}"
-
-        existing_filters = {}
-        for existing in adhoc_filters:
-            if (
-                existing["expressionType"] == "SIMPLE"
-                and existing.get("comparator") is not None
-                and existing.get("subject") is not None
-            ):
-                existing_filters[get_filter_key(existing)] = existing["comparator"]
-
-        for filtr in form_data["extra_filters"]:
-            filtr["isExtra"] = True
-            # Pull out time filters/options and merge into form data
-            filter_column = filtr["col"]
-            if time_extra := date_options.get(filter_column):
-                time_extra_value = filtr.get("val")
-                if time_extra_value and time_extra_value != NO_TIME_RANGE:
-                    form_data[time_extra] = time_extra_value
-                    form_data["applied_time_extras"][filter_column] = time_extra_value
-            elif filtr["val"]:
-                # Merge column filters
-                if (filter_key := get_filter_key(filtr)) in existing_filters:
-                    # Check if the filter already exists
-                    if isinstance(filtr["val"], list):
-                        if isinstance(existing_filters[filter_key], list):
-                            # Add filters for unequal lists
-                            # order doesn't matter
-                            if set(existing_filters[filter_key]) != set(filtr["val"]):
-                                adhoc_filters.append(simple_filter_to_adhoc(filtr))
-                        else:
-                            adhoc_filters.append(simple_filter_to_adhoc(filtr))
-                    else:
-                        # Do not add filter if same value already exists
-                        if filtr["val"] != existing_filters[filter_key]:
-                            adhoc_filters.append(simple_filter_to_adhoc(filtr))
-                else:
-                    # Filter not found, add it
-                    adhoc_filters.append(simple_filter_to_adhoc(filtr))
-        # Remove extra filters from the form data since no longer needed
-        del form_data["extra_filters"]
+    for filtr in form_data["extra_filters"]:
+        filtr["isExtra"] = True
+        # Pull out time filters/options and merge into form data
+        filter_column = filtr["col"]
+        if time_extra := date_options.get(filter_column):
+            time_extra_value = filtr.get("val")
+            if time_extra_value and time_extra_value != NO_TIME_RANGE:
+                form_data[time_extra] = time_extra_value
+                form_data["applied_time_extras"][filter_column] = time_extra_value
+        elif filtr["val"]:
+            _merge_extra_column_filter(filtr, adhoc_filters, existing_filters)
+    # Remove extra filters from the form data since no longer needed
+    del form_data["extra_filters"]
 
 
 def merge_request_params(form_data: dict[str, Any], params: dict[str, Any]) -> None:
@@ -817,7 +870,8 @@ def ensure_path_exists(path: str) -> None:
 def convert_legacy_filters_into_adhoc(
     form_data: FormData,
 ) -> None:
-    """Migrate legacy *where*/*having*/*filters* keys in *form_data* to adhoc filters."""
+    """Migrate legacy *where*/*having*/*filters* keys in *form_data* to adhoc
+    filters."""
     if not form_data.get("adhoc_filters"):
         adhoc_filters: list[AdhocFilterClause] = []
         form_data["adhoc_filters"] = adhoc_filters
@@ -1017,7 +1071,7 @@ def get_column_name_from_column(column: Column) -> str | None:
     """
     if is_adhoc_column(column):
         return None
-    return column  # type: ignore
+    return cast(str, column)
 
 
 def get_column_names_from_columns(columns: list[Column]) -> list[str]:
