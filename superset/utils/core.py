@@ -284,7 +284,7 @@ def error_msg_from_exception(ex: Exception) -> str:
     msg = ""
     if hasattr(ex, "message"):
         if isinstance(ex.message, dict):
-            msg = cast(str, ex.message.get("message"))
+            msg = ex.message.get("message") or ""
         elif ex.message:
             msg = ex.message
     return str(msg) or str(ex)
@@ -539,7 +539,7 @@ def _merge_override_form_data(
 def _merge_append_adhoc_filters(
     form_data: dict[str, Any],
     extra_form_data: dict[str, Any],
-    append_filters: list[QueryObjectFilterClause],
+    append_filters: list[QueryObjectFilterClause] | None,
 ) -> list[AdhocFilterClause]:
     """Merge append/extra adhoc filters into *form_data* and return them."""
     adhoc_filters: list[AdhocFilterClause] = form_data.get("adhoc_filters", [])
@@ -604,7 +604,9 @@ def merge_extra_form_data(form_data: dict[str, Any]) -> None:
     """
     filter_keys = ["filters", "adhoc_filters"]
     extra_form_data = form_data.pop("extra_form_data", {})
-    append_filters: list[QueryObjectFilterClause] = extra_form_data.get("filters", None)
+    append_filters: list[QueryObjectFilterClause] | None = extra_form_data.get(
+        "filters", None
+    )
 
     _merge_append_form_data(form_data, extra_form_data, filter_keys)
     _merge_override_form_data(form_data, extra_form_data)
@@ -643,11 +645,14 @@ def _merge_extra_column_filter(
     existing_filters: dict[str, Any],
 ) -> None:
     """Append *filtr* to *adhoc_filters* unless an equal filter already exists."""
-    adhoc_filter = simple_filter_to_adhoc(cast(QueryObjectFilterClause, filtr))
+
+    def to_adhoc() -> AdhocFilterClause:
+        return simple_filter_to_adhoc(cast(QueryObjectFilterClause, filtr))
+
     filter_key = _extra_filter_key(filtr)
     if filter_key not in existing_filters:
         # Filter not found, add it
-        adhoc_filters.append(adhoc_filter)
+        adhoc_filters.append(to_adhoc())
         return
 
     existing_value = existing_filters[filter_key]
@@ -656,10 +661,10 @@ def _merge_extra_column_filter(
         if not isinstance(existing_value, list) or set(existing_value) != set(
             filtr["val"]
         ):
-            adhoc_filters.append(adhoc_filter)
+            adhoc_filters.append(to_adhoc())
     elif filtr["val"] != existing_value:
         # Do not add filter if same value already exists
-        adhoc_filters.append(adhoc_filter)
+        adhoc_filters.append(to_adhoc())
 
 
 def merge_extra_filters(form_data: dict[str, Any]) -> None:
