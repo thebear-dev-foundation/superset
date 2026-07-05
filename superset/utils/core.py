@@ -817,7 +817,7 @@ def ensure_path_exists(path: str) -> None:
 def convert_legacy_filters_into_adhoc(
     form_data: FormData,
 ) -> None:
-    """Migrate legacy *where*/*having*/*filters* keys in *form_data* to adhoc filters."""
+    """Migrate legacy filter keys in *form_data* to adhoc filters."""
     if not form_data.get("adhoc_filters"):
         adhoc_filters: list[AdhocFilterClause] = []
         form_data["adhoc_filters"] = adhoc_filters
@@ -943,6 +943,13 @@ def time_function(
 
 
 def shortid() -> str:
+    """Generate a short random identifier.
+
+    Returns a 12-character string derived from the last 12 hex characters
+    (including hyphens) of a randomly generated UUID4.
+
+    :returns: A 12-character random identifier string.
+    """
     return f"{uuid.uuid4()}"[-12:]
 
 
