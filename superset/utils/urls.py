@@ -24,6 +24,13 @@ from flask import current_app as app, has_request_context, url_for
 
 
 def get_url_host(user_friendly: bool = False) -> str:
+    """Return the configured base URL used to reach Superset.
+
+    :param user_friendly: If ``True``, return the user-facing base URL
+        (``WEBDRIVER_BASEURL_USER_FRIENDLY``); otherwise return the headless
+        base URL (``WEBDRIVER_BASEURL``).
+    :returns: The configured base URL as a string.
+    """
     if user_friendly:
         return app.config["WEBDRIVER_BASEURL_USER_FRIENDLY"]
     return app.config["WEBDRIVER_BASEURL"]
