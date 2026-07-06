@@ -39,6 +39,13 @@ if TYPE_CHECKING:
 
 
 def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
+    """Create a decorator that emits a StatsD gauge on success or failure.
+
+    :param metric_prefix: Metric name prefix; defaults to the decorated
+        function's ``__name__``.
+    :returns: A decorator that wraps a function with StatsD gauge reporting.
+    """
+
     def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
         """
         Handle sending statsd gauge metric from any method or function

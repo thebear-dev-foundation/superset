@@ -77,6 +77,11 @@ days_range = (MAXIMUM_DATE - MINIMUM_DATE).days
 def get_type_generator(  # pylint: disable=too-many-return-statements,too-many-branches  # noqa: C901
     sqltype: sqlalchemy.sql.sqltypes,
 ) -> Callable[[], Any]:
+    """Return a zero-argument callable that generates random data for a SQL type.
+
+    :param sqltype: A SQLAlchemy type instance.
+    :returns: A callable producing random values appropriate for *sqltype*.
+    """
     if isinstance(sqltype, sqlalchemy.dialects.mysql.types.TINYINT):
         return lambda: random.choice([0, 1])  # noqa: S311
 
@@ -223,6 +228,11 @@ def add_data(
 
 
 def get_column_objects(columns: list[ColumnInfo]) -> list[Column]:
+    """Convert column info dicts into SQLAlchemy :class:`Column` objects.
+
+    :param columns: List of column metadata dicts.
+    :returns: List of corresponding ``Column`` instances.
+    """
     out = []
     for column in columns:
         kwargs = cast(dict[str, Any], column.copy())
@@ -232,6 +242,12 @@ def get_column_objects(columns: list[ColumnInfo]) -> list[Column]:
 
 
 def generate_data(columns: list[ColumnInfo], num_rows: int) -> list[dict[str, Any]]:
+    """Generate random row data for the given column definitions.
+
+    :param columns: List of column metadata dicts.
+    :param num_rows: Number of rows to generate.
+    :returns: List of dicts mapping column names to generated values.
+    """
     keys = [column["name"] for column in columns]
     return [
         dict(zip(keys, row, strict=False))
@@ -243,6 +259,12 @@ def generate_data(columns: list[ColumnInfo], num_rows: int) -> list[dict[str, An
 
 
 def generate_column_data(column: ColumnInfo, num_rows: int) -> list[Any]:
+    """Generate a list of random values for a single column.
+
+    :param column: Column metadata dict.
+    :param num_rows: Number of values to generate.
+    :returns: List of randomly generated values.
+    """
     gen = get_type_generator(column["type"])
     return [gen() for _ in range(num_rows)]
 
@@ -295,6 +317,11 @@ def add_sample_rows(model: type[Model], count: int) -> Iterator[Model]:
 
 
 def get_valid_foreign_key(column: Column) -> Any:
+    """Retrieve an existing foreign-key value from the referenced table.
+
+    :param column: A ``Column`` with at least one foreign key.
+    :returns: A scalar value from the referenced table.
+    """
     foreign_key = list(column.foreign_keys)[0]
     table_name, column_name = foreign_key.target_fullname.split(".", 1)
     t = sa_table(table_name, sa_column(column_name))
@@ -302,6 +329,11 @@ def get_valid_foreign_key(column: Column) -> Any:
 
 
 def generate_value(column: Column) -> Any:
+    """Generate a single random value appropriate for a column's type.
+
+    :param column: A SQLAlchemy ``Column`` instance.
+    :returns: A randomly generated value.
+    """
     if hasattr(column.type, "enums"):
         return random.choice(column.type.enums)  # noqa: S311
 

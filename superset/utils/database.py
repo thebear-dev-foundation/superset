@@ -79,12 +79,20 @@ def get_or_create_db(
 
 
 def get_example_database() -> Database:
+    """Return the examples database, creating it if necessary.
+
+    :returns: The ``Database`` instance for the examples database.
+    """
     # pylint: disable=import-outside-toplevel
 
     return get_or_create_db("examples", app.config["SQLALCHEMY_EXAMPLES_URI"])
 
 
 def get_main_database() -> Database:
+    """Return the main metadata database, creating it if necessary.
+
+    :returns: The ``Database`` instance for the main database.
+    """
     # pylint: disable=import-outside-toplevel
 
     db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
@@ -94,6 +102,10 @@ def get_main_database() -> Database:
 # TODO - the below method used by tests so should move there but should move together
 # with above function... think of how to refactor it
 def remove_database(database: Database) -> None:
+    """Delete a database record from the metadata store.
+
+    :param database: The ``Database`` instance to remove.
+    """
     # pylint: disable=import-outside-toplevel
     from superset import db
 

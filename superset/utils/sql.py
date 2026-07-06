@@ -103,10 +103,23 @@ def get_example_default_schema() -> str | None:
 
 
 def backend() -> str:
+    """Return the backend name of the examples database.
+
+    :returns: Database backend identifier string (e.g. ``"postgresql"``).
+    """
     return get_example_database().backend
 
 
 def pessimistic_connection_handling(some_engine: Engine) -> None:
+    """Register pessimistic disconnect-handling listeners on an engine.
+
+    Adds an ``engine_connect`` listener that pings the connection before
+    use and reconnects on failure. For SQLite engines, also enables
+    foreign-key support via ``PRAGMA foreign_keys=ON``.
+
+    :param some_engine: The SQLAlchemy ``Engine`` to instrument.
+    """
+
     @event.listens_for(some_engine, "engine_connect")
     def ping_connection(connection: Connection, branch: bool) -> None:
         if branch:
@@ -162,8 +175,16 @@ def pessimistic_connection_handling(some_engine: Engine) -> None:
 
 
 def MediumText() -> Variant:  # pylint:disable=invalid-name  # noqa: N802
+    """Return a :class:`Text` type that maps to ``MEDIUMTEXT`` on MySQL.
+
+    :returns: A ``Text`` variant.
+    """
     return Text().with_variant(MEDIUMTEXT(), "mysql")
 
 
 def LongText() -> Variant:  # pylint:disable=invalid-name  # noqa: N802
+    """Return a :class:`Text` type that maps to ``LONGTEXT`` on MySQL.
+
+    :returns: A ``Text`` variant.
+    """
     return Text().with_variant(LONGTEXT(), "mysql")

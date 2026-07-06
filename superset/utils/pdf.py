@@ -29,6 +29,12 @@ except ModuleNotFoundError:
 
 
 def build_pdf_from_screenshots(snapshots: list[bytes]) -> bytes:
+    """Combine screenshot images into a single PDF document.
+
+    :param snapshots: List of screenshot image bytes (PNG/JPEG).
+    :returns: The resulting PDF file as bytes.
+    :raises ReportSchedulePdfFailedError: If the conversion fails.
+    """
     images = []
 
     for snap in snapshots:

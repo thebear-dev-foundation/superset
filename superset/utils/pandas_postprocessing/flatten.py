@@ -28,6 +28,11 @@ from superset.utils.pandas_postprocessing.utils import (
 
 
 def is_sequence(seq: Any) -> bool:
+    """Check whether *seq* is a non-string iterable.
+
+    :param seq: Value to test.
+    :returns: ``True`` if *seq* is iterable but not a string.
+    """
     if isinstance(seq, str):
         return False
 

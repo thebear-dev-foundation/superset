@@ -45,6 +45,10 @@ class SlackClientError(Exception):
 
 
 def get_slack_client() -> WebClient:
+    """Create and return a configured Slack :class:`WebClient`.
+
+    :returns: A ``WebClient`` instance with rate-limit retry handling.
+    """
     token: str = app.config["SLACK_API_TOKEN"]
     if callable(token):
         token = token()
@@ -180,6 +184,11 @@ def get_channels_with_search(
 
 
 def should_use_v2_api() -> bool:
+    """Determine whether the Slack v2 API should be used for reports.
+
+    :returns: ``True`` if the ``ALERT_REPORT_SLACK_V2`` feature flag is
+        enabled and the Slack token has the required scopes.
+    """
     if not feature_flag_manager.is_feature_enabled("ALERT_REPORT_SLACK_V2"):
         return False
     try:
@@ -198,6 +207,14 @@ def should_use_v2_api() -> bool:
 
 
 def get_user_avatar(email: str, client: WebClient = None) -> str:
+    """Fetch a Slack user's avatar URL by email address.
+
+    :param email: The user's email address.
+    :param client: Optional pre-configured ``WebClient``; defaults to a
+        new client from :func:`get_slack_client`.
+    :returns: URL of the user's 192px profile image.
+    :raises SlackClientError: If the lookup or profile retrieval fails.
+    """
     client = client or get_slack_client()
     try:
         response = client.users_lookupByEmail(email=email)

@@ -140,6 +140,14 @@ def send_mime_email(
     config: dict[str, Any],
     dryrun: bool = False,
 ) -> None:
+    """Send a MIME email message via SMTP.
+
+    :param e_from: Sender email address.
+    :param e_to: List of recipient email addresses.
+    :param mime_msg: The MIME message to send.
+    :param config: Application config dict with SMTP settings.
+    :param dryrun: If ``True``, log the message instead of sending.
+    """
     smtp_host = config["SMTP_HOST"]
     smtp_port = config["SMTP_PORT"]
     smtp_user = config["SMTP_USER"]

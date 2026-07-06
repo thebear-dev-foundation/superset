@@ -63,6 +63,15 @@ def quote_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def df_to_excel(df: pd.DataFrame, **kwargs: Any) -> Any:
+    """Serialize a DataFrame to Excel (xlsx) bytes.
+
+    Formulas in the data are quoted to prevent injection. Extra keyword
+    arguments are forwarded to :meth:`pandas.DataFrame.to_excel`.
+
+    :param df: The DataFrame to export.
+    :param kwargs: Additional arguments for ``DataFrame.to_excel``.
+    :returns: The Excel file content as bytes.
+    """
     output = io.BytesIO()
 
     # make sure formulas are quoted, to prevent malicious injections

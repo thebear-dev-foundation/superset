@@ -29,6 +29,14 @@ logger = logging.getLogger(__name__)
 def convert_filter_scopes(  # noqa: C901
     json_metadata: dict[Any, Any], filter_boxes: list[Slice]
 ) -> dict[int, dict[str, dict[str, Any]]]:
+    """Convert legacy dashboard filter-box metadata into filter scopes.
+
+    :param json_metadata: Dashboard JSON metadata containing immunity
+        and filter configuration.
+    :param filter_boxes: List of filter-box slices to process.
+    :returns: Mapping of filter slice ID to its per-field scope/immunity
+        configuration.
+    """
     filter_scopes = {}
     immuned_by_id: list[int] = json_metadata.get("filter_immune_slices") or []
     immuned_by_column: dict[str, list[int]] = defaultdict(list)
@@ -78,6 +86,14 @@ def copy_filter_scopes(
     old_to_new_slc_id_dict: dict[int, int],
     old_filter_scopes: dict[int, dict[str, dict[str, Any]]],
 ) -> dict[str, dict[Any, Any]]:
+    """Duplicate filter scopes, remapping old slice IDs to new ones.
+
+    :param old_to_new_slc_id_dict: Mapping from old slice IDs to their
+        new counterparts.
+    :param old_filter_scopes: Original filter scope configuration keyed
+        by old slice ID.
+    :returns: New filter scopes keyed by the new (string) slice IDs.
+    """
     new_filter_scopes: dict[str, dict[Any, Any]] = {}
     for filter_id, scopes in old_filter_scopes.items():
         new_filter_key = old_to_new_slc_id_dict.get(int(filter_id))

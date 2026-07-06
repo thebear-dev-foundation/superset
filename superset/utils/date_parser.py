@@ -92,6 +92,13 @@ def parse_human_datetime(human_readable: str) -> datetime:
 
 
 def normalize_time_delta(human_readable: str) -> dict[str, int]:
+    """Parse a human-readable time delta into a unit/value dict.
+
+    :param human_readable: String like ``"3 days ago"`` or ``"1 week later"``.
+    :returns: Dict mapping the pluralized time unit to its signed integer
+        value (negative for past).
+    :raises TimeDeltaAmbiguousError: If the string cannot be parsed.
+    """
     x_unit = r"^\s*([0-9]+)\s+(second|minute|hour|day|week|month|quarter|year)s?\s+(ago|later)*$"  # noqa: E501
     matched = re.match(x_unit, human_readable, re.IGNORECASE)
     if not matched:
@@ -104,6 +111,11 @@ def normalize_time_delta(human_readable: str) -> dict[str, int]:
 
 
 def dttm_from_timetuple(date_: struct_time) -> datetime:
+    """Convert a :class:`time.struct_time` to a :class:`datetime.datetime`.
+
+    :param date_: A time struct to convert.
+    :returns: Equivalent ``datetime`` instance (no timezone info).
+    """
     return datetime(
         date_.tm_year,
         date_.tm_mon,
@@ -118,6 +130,12 @@ def get_past_or_future(
     human_readable: str | None,
     source_time: datetime | None = None,
 ) -> datetime:
+    """Resolve a natural-language time expression to an absolute datetime.
+
+    :param human_readable: Natural-language time string (e.g. ``"next friday"``).
+    :param source_time: Reference time; defaults to now.
+    :returns: Resolved ``datetime``.
+    """
     cal = parsedatetime.Calendar()
     source_dttm = dttm_from_timetuple(
         source_time.timetuple() if source_time else datetime.now().timetuple()
@@ -822,6 +840,12 @@ class EvalHolidayFunc:  # pylint: disable=too-few-public-methods
 
 @lru_cache(maxsize=LRU_CACHE_MAX_SIZE)
 def datetime_parser() -> ParseResults:  # pylint: disable=too-many-locals
+    """Build and cache a pyparsing grammar for Superset datetime expressions.
+
+    :returns: A ``ParseResults``-compatible parser supporting ``datetime()``,
+        ``dateadd()``, ``datediff()``, ``datetrunc()``, ``lastday()``, and
+        ``holiday()`` expressions.
+    """
     (  # pylint: disable=invalid-name
         DATETIME,  # noqa: N806
         DATEADD,  # noqa: N806
@@ -923,6 +947,13 @@ def datetime_parser() -> ParseResults:  # pylint: disable=too-many-locals
 
 
 def datetime_eval(datetime_expression: str | None = None) -> datetime | None:
+    """Evaluate a Superset datetime expression string.
+
+    :param datetime_expression: Expression to evaluate (e.g.
+        ``"dateadd(datetime('today'), 1, day)"``).
+    :returns: Resolved ``datetime``, or ``None`` when the input is falsy.
+    :raises ValueError: If the expression cannot be parsed.
+    """
     if datetime_expression:
         try:
             return datetime_parser().parseString(datetime_expression)[0].eval()

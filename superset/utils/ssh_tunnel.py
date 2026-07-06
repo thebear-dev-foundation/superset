@@ -30,6 +30,12 @@ DEFAULT_PORTS: dict[str, int] = {
 
 
 def mask_password_info(ssh_tunnel: dict[str, Any]) -> dict[str, Any]:
+    """Replace sensitive SSH tunnel values with a mask placeholder.
+
+    :param ssh_tunnel: Mutable dict of SSH tunnel configuration.
+    :returns: The same dict with password fields replaced by
+        :data:`PASSWORD_MASK`.
+    """
     for key in {"password", "private_key", "private_key_password"}:
         if ssh_tunnel.pop(key, None) is not None:
             ssh_tunnel[key] = PASSWORD_MASK
@@ -41,6 +47,12 @@ def unmask_password_info(
     ssh_tunnel: dict[str, Any],
     model: SSHTunnel,
 ) -> dict[str, Any]:
+    """Restore masked SSH tunnel password fields from a model.
+
+    :param ssh_tunnel: Dict with potentially masked password fields.
+    :param model: The ``SSHTunnel`` model holding the real values.
+    :returns: The same dict with masked values restored from *model*.
+    """
     for key in {"password", "private_key", "private_key_password"}:
         if ssh_tunnel.get(key) == PASSWORD_MASK:
             ssh_tunnel[key] = getattr(model, key)

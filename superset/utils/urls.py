@@ -24,12 +24,23 @@ from flask import current_app as app, has_request_context, url_for
 
 
 def get_url_host(user_friendly: bool = False) -> str:
+    """Return the configured base URL for headless or user-facing access.
+
+    :param user_friendly: If ``True``, return the user-facing base URL.
+    :returns: The base URL string.
+    """
     if user_friendly:
         return app.config["WEBDRIVER_BASEURL_USER_FRIENDLY"]
     return app.config["WEBDRIVER_BASEURL"]
 
 
 def headless_url(path: str, user_friendly: bool = False) -> str:
+    """Join a path with the headless base URL.
+
+    :param path: Relative URL path.
+    :param user_friendly: If ``True``, use the user-facing base URL.
+    :returns: Fully-qualified URL.
+    """
     return urllib.parse.urljoin(get_url_host(user_friendly=user_friendly), path)
 
 

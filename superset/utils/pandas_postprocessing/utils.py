@@ -104,6 +104,12 @@ def _is_multi_index_on_columns(df: DataFrame) -> bool:
 
 
 def scalar_to_sequence(val: Any) -> Sequence[str]:
+    """Wrap a scalar value in a single-element list.
+
+    :param val: A string, ``None``, or an existing sequence.
+    :returns: A list containing the value, an empty list for ``None``,
+        or the value itself if already a sequence.
+    """
     if val is None:
         return []
     if isinstance(val, str):
@@ -112,6 +118,14 @@ def scalar_to_sequence(val: Any) -> Sequence[str]:
 
 
 def validate_column_args(*argnames: str) -> Callable[..., Any]:
+    """Create a decorator that validates named column arguments exist in a DataFrame.
+
+    :param argnames: Names of keyword arguments whose values must be
+        present as columns in the input DataFrame.
+    :returns: A decorator that raises
+        :class:`InvalidPostProcessingError` on missing columns.
+    """
+
     def wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
         def wrapped(df: DataFrame, **options: Any) -> Any:
             if _is_multi_index_on_columns(df):
@@ -211,10 +225,22 @@ def _append_columns(
 
 
 def escape_separator(plain_str: str, sep: str = FLAT_COLUMN_SEPARATOR) -> str:
+    """Escape the flat-column separator character in a string.
+
+    :param plain_str: The input string.
+    :param sep: Separator to escape (default ``", "``).
+    :returns: String with separator characters backslash-escaped.
+    """
     char = sep.strip()
     return plain_str.replace(char, "\\" + char)
 
 
 def unescape_separator(escaped_str: str, sep: str = FLAT_COLUMN_SEPARATOR) -> str:
+    """Reverse the escaping applied by :func:`escape_separator`.
+
+    :param escaped_str: A previously escaped string.
+    :param sep: Separator whose escape sequences should be removed.
+    :returns: String with backslash-escaped separators restored.
+    """
     char = sep.strip()
     return escaped_str.replace("\\" + char, char)

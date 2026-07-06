@@ -134,6 +134,14 @@ def refresh_oauth2_token(
     user_id: int,
     db_engine_spec: type[BaseEngineSpec],
 ) -> str | None:
+    """Refresh an expired OAuth2 access token using the stored refresh token.
+
+    :param config: OAuth2 client configuration.
+    :param database_id: ID of the database whose token to refresh.
+    :param user_id: ID of the user who owns the token.
+    :param db_engine_spec: Database engine spec for token exchange.
+    :returns: The new access token string, or ``None`` if refresh fails.
+    """
     # pylint: disable=import-outside-toplevel
     from superset.models.core import DatabaseUserOAuth2Tokens
 

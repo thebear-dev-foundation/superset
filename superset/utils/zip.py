@@ -28,6 +28,11 @@ from superset.exceptions import SupersetException
 
 
 def create_zip(files: dict[str, Any]) -> BytesIO:
+    """Create an in-memory ZIP archive from a mapping of filenames to contents.
+
+    :param files: Dict mapping archive member names to their byte contents.
+    :returns: A seeked-to-start :class:`BytesIO` containing the ZIP data.
+    """
     buf = BytesIO()
     with ZipFile(buf, "w") as bundle:
         for filename, contents in files.items():

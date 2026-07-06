@@ -954,6 +954,11 @@ def shortid() -> str:
 
 
 def get_stacktrace() -> str | None:
+    """Return the current exception traceback if stack traces are enabled.
+
+    :returns: Formatted traceback string, or ``None`` when the
+        ``SHOW_STACKTRACE`` config flag is disabled.
+    """
     if app.config["SHOW_STACKTRACE"]:
         return traceback.format_exc()
     return None
@@ -1184,6 +1189,12 @@ def extract_dataframe_dtypes(
 
 
 def extract_column_dtype(col: ColumnMetadata) -> GenericDataType:
+    """Derive the :class:`GenericDataType` for a column metadata object.
+
+    :param col: Column metadata with ``is_dttm``, ``is_temporal``, and
+        ``is_numeric`` attributes.
+    :returns: The inferred generic data type.
+    """
     # Check for temporal type
     if hasattr(col, "is_temporal") and col.is_temporal:
         return GenericDataType.TEMPORAL
@@ -1199,6 +1210,11 @@ def extract_column_dtype(col: ColumnMetadata) -> GenericDataType:
 
 
 def is_test() -> bool:
+    """Check whether the application is running in a test environment.
+
+    :returns: ``True`` when the ``SUPERSET_TESTENV`` environment variable
+        is set to a truthy value.
+    """
     return parse_boolean_string(os.environ.get("SUPERSET_TESTENV", "false"))
 
 
@@ -1206,6 +1222,14 @@ def get_time_filter_status(
     datasource: Explorable,
     applied_time_extras: dict[str, str],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Determine which time-based extra filters were applied or rejected.
+
+    :param datasource: The explorable datasource whose temporal columns
+        are inspected.
+    :param applied_time_extras: Mapping of time extra filter types to their
+        values.
+    :returns: A two-element tuple of (applied, rejected) filter dicts.
+    """
     temporal_columns: set[Any] = {
         col.column_name for col in datasource.columns if col.is_dttm
     }
@@ -1250,6 +1274,13 @@ def get_time_filter_status(
 
 
 def format_list(items: Sequence[str], sep: str = ", ", quote: str = '"') -> str:
+    """Join strings into a quoted, separated list.
+
+    :param items: Strings to format.
+    :param sep: Separator placed between items.
+    :param quote: Quote character wrapping each item.
+    :returns: A single formatted string.
+    """
     quote_escaped = "\\" + quote
     return sep.join(f"{quote}{x.replace(quote, quote_escaped)}{quote}" for x in items)
 
@@ -1349,6 +1380,12 @@ def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:
 
 
 def to_int(v: Any, value_if_invalid: int = 0) -> int:
+    """Safely cast a value to ``int``.
+
+    :param v: Value to convert.
+    :param value_if_invalid: Fallback returned when *v* cannot be cast.
+    :returns: The integer representation of *v*, or *value_if_invalid*.
+    """
     try:
         return int(v)
     except (ValueError, TypeError):
@@ -1356,6 +1393,11 @@ def to_int(v: Any, value_if_invalid: int = 0) -> int:
 
 
 def get_query_source_from_request() -> QuerySource | None:
+    """Infer the :class:`QuerySource` from the current HTTP request referrer.
+
+    :returns: The detected query source (dashboard, chart, or SQL Lab),
+        or ``None`` if not determinable.
+    """
     if not request or not request.referrer:
         return None
     if "/superset/dashboard/" in request.referrer:
@@ -1368,6 +1410,15 @@ def get_query_source_from_request() -> QuerySource | None:
 
 
 def get_user_agent(database: Database, source: QuerySource | None) -> str:
+    """Build the User-Agent string for a database query.
+
+    Delegates to the ``USER_AGENT_FUNC`` config callback when set;
+    otherwise returns the default Superset user agent.
+
+    :param database: Target database connection.
+    :param source: Origin of the query (dashboard, chart, SQL Lab, etc.).
+    :returns: User-Agent string.
+    """
     source = source or get_query_source_from_request()
     if user_agent_func := app.config["USER_AGENT_FUNC"]:
         return user_agent_func(database, source)

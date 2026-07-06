@@ -32,6 +32,12 @@ from typing import Any, Callable
 
 
 def compute_hash(obj: Callable[..., Any]) -> str:
+    """Compute a stable hash of a callable's public interface.
+
+    :param obj: A function or class to hash.
+    :returns: A base-85-encoded SHA-256 digest string.
+    :raises TypeError: If *obj* is neither a function nor a class.
+    """
     if isfunction(obj):
         return compute_func_hash(obj)
 
@@ -42,12 +48,23 @@ def compute_hash(obj: Callable[..., Any]) -> str:
 
 
 def compute_func_hash(function: Callable[..., Any]) -> str:
+    """Compute a hash of a function's signature.
+
+    :param function: The function to hash.
+    :returns: A base-85-encoded SHA-256 digest of the signature.
+    """
     hashed = sha256()
     hashed.update(str(signature(function)).encode())
     return b85encode(hashed.digest()).decode("utf-8")
 
 
 def compute_class_hash(class_: Callable[..., Any]) -> str:
+    """Compute a hash of a class's public method signatures.
+
+    :param class_: The class to hash.
+    :returns: A base-85-encoded SHA-256 digest of all public method
+        signatures.
+    """
     hashed = sha256()
     public_methods = sorted(
         [
@@ -63,6 +80,12 @@ def compute_class_hash(class_: Callable[..., Any]) -> str:
 
 
 def get_warning_message(obj: Callable[..., Any], expected_hash: str) -> str:
+    """Build a warning message for a changed public interface.
+
+    :param obj: The callable whose interface changed.
+    :param expected_hash: The hash to update the code to.
+    :returns: A human-readable warning string with source context.
+    """
     sourcefile = getsourcefile(obj)
     sourcelines = getsourcelines(obj)
     code = indent("".join(sourcelines[0]), "    ")
