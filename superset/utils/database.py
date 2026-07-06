@@ -19,10 +19,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from flask import current_app as app
 from sqlalchemy.sql import compiler
+from sqlalchemy.sql.ddl import CreateSequence
 
 from superset.constants import EXAMPLES_DB_UUID
 
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 # TODO: duplicate code with DatabaseDao, below function should be moved or use dao
 def get_or_create_db(
     database_name: str, sqlalchemy_uri: str, always_create: bool | None = True
-) -> Database:
+) -> Database | None:
     """Return an existing database record or create a new one.
 
     Looks up a :class:`~superset.models.core.Database` by *database_name*.
@@ -47,7 +48,8 @@ def get_or_create_db(
     :param database_name: Logical name used as the lookup key.
     :param sqlalchemy_uri: SQLAlchemy connection string to store.
     :param always_create: Create the record when it is missing (default ``True``).
-    :returns: The matched or newly created ``Database`` instance.
+    :returns: The matched or newly created ``Database`` instance, or
+        ``None`` when *always_create* is falsy and no record exists.
     """
     # pylint: disable=import-outside-toplevel
     from superset import db
@@ -81,14 +83,18 @@ def get_or_create_db(
 def get_example_database() -> Database:
     # pylint: disable=import-outside-toplevel
 
-    return get_or_create_db("examples", app.config["SQLALCHEMY_EXAMPLES_URI"])
+    database = get_or_create_db("examples", app.config["SQLALCHEMY_EXAMPLES_URI"])
+    assert database is not None
+    return database
 
 
 def get_main_database() -> Database:
     # pylint: disable=import-outside-toplevel
 
     db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
-    return get_or_create_db("main", db_uri)
+    database = get_or_create_db("main", db_uri)
+    assert database is not None
+    return database
 
 
 # TODO - the below method used by tests so should move there but should move together
@@ -110,7 +116,9 @@ def apply_mariadb_ddl_fix() -> None:
     """
     original_visit_create_sequence = compiler.DDLCompiler.visit_create_sequence
 
-    def patched_visit_create_sequence(self: Any, create: Any, **kw: Any) -> str:
+    def patched_visit_create_sequence(
+        self: compiler.DDLCompiler, create: CreateSequence, **kw: str
+    ) -> str:
         text = original_visit_create_sequence(self, create, **kw)
         dialect_name = getattr(self.dialect, "name", "") or ""
         if "mariadb" in dialect_name.lower():

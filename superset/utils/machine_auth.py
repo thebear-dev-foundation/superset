@@ -158,4 +158,5 @@ class MachineAuthProviderFactory:
 
     @property
     def instance(self) -> MachineAuthProvider:
-        return self._auth_provider  # type: ignore
+        assert self._auth_provider is not None, "call init_app() first"
+        return self._auth_provider
