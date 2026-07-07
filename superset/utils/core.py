@@ -954,6 +954,14 @@ def shortid() -> str:
 
 
 def get_stacktrace() -> str | None:
+    """Return the current exception traceback if configured to do so.
+
+    When the ``SHOW_STACKTRACE`` application configuration flag is enabled,
+    formats and returns the active exception traceback as a string.
+
+    :returns: The formatted traceback string, or ``None`` when
+        ``SHOW_STACKTRACE`` is disabled.
+    """
     if app.config["SHOW_STACKTRACE"]:
         return traceback.format_exc()
     return None
@@ -1184,6 +1192,14 @@ def extract_dataframe_dtypes(
 
 
 def extract_column_dtype(col: ColumnMetadata) -> GenericDataType:
+    """Determine the generic data type of a column from its metadata.
+
+    Inspects the column metadata attributes to classify the column as
+    temporal, numeric, or string.
+
+    :param col: Column metadata object to inspect.
+    :returns: The inferred :class:`GenericDataType` for the column.
+    """
     # Check for temporal type
     if hasattr(col, "is_temporal") and col.is_temporal:
         return GenericDataType.TEMPORAL
@@ -1199,6 +1215,14 @@ def extract_column_dtype(col: ColumnMetadata) -> GenericDataType:
 
 
 def is_test() -> bool:
+    """Check whether Superset is running in a test environment.
+
+    Reads the ``SUPERSET_TESTENV`` environment variable and parses it as a
+    boolean.
+
+    :returns: ``True`` when the test-environment flag is set, ``False``
+        otherwise.
+    """
     return parse_boolean_string(os.environ.get("SUPERSET_TESTENV", "false"))
 
 
@@ -1206,6 +1230,18 @@ def get_time_filter_status(
     datasource: Explorable,
     applied_time_extras: dict[str, str],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Classify applied time-extra filters as accepted or rejected.
+
+    Validates each time-related extra filter (time column, time grain,
+    time range) against the temporal columns available in the datasource.
+
+    :param datasource: The explorable datasource whose temporal columns
+        are checked.
+    :param applied_time_extras: Mapping of time-extra filter types to
+        their applied values.
+    :returns: A tuple of ``(applied, rejected)`` where each element is a
+        list of dicts describing accepted or rejected filter entries.
+    """
     temporal_columns: set[Any] = {
         col.column_name for col in datasource.columns if col.is_dttm
     }
@@ -1250,6 +1286,16 @@ def get_time_filter_status(
 
 
 def format_list(items: Sequence[str], sep: str = ", ", quote: str = '"') -> str:
+    """Join a sequence of strings into a quoted, separated representation.
+
+    Each item is surrounded by *quote* characters (with embedded quotes
+    escaped) and the results are joined by *sep*.
+
+    :param items: Strings to format.
+    :param sep: Separator placed between items.
+    :param quote: Quote character used to wrap each item.
+    :returns: The formatted string.
+    """
     quote_escaped = "\\" + quote
     return sep.join(f"{quote}{x.replace(quote, quote_escaped)}{quote}" for x in items)
 
@@ -1349,6 +1395,14 @@ def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:
 
 
 def to_int(v: Any, value_if_invalid: int = 0) -> int:
+    """Safely cast a value to an integer.
+
+    :param v: Value to convert.
+    :param value_if_invalid: Fallback returned when *v* cannot be
+        converted to ``int``.
+    :returns: The integer representation of *v*, or *value_if_invalid*
+        on failure.
+    """
     try:
         return int(v)
     except (ValueError, TypeError):
@@ -1356,6 +1410,14 @@ def to_int(v: Any, value_if_invalid: int = 0) -> int:
 
 
 def get_query_source_from_request() -> QuerySource | None:
+    """Infer the query source from the current HTTP request referrer.
+
+    Examines ``request.referrer`` to determine whether the query
+    originated from a dashboard, chart explore view, or SQL Lab.
+
+    :returns: The matching :class:`QuerySource` variant, or ``None``
+        when the referrer is unavailable or unrecognised.
+    """
     if not request or not request.referrer:
         return None
     if "/superset/dashboard/" in request.referrer:
@@ -1368,6 +1430,16 @@ def get_query_source_from_request() -> QuerySource | None:
 
 
 def get_user_agent(database: Database, source: QuerySource | None) -> str:
+    """Build the User-Agent string for an outgoing database query.
+
+    Delegates to the ``USER_AGENT_FUNC`` configuration callback when
+    defined; otherwise returns :data:`DEFAULT_USER_AGENT`.
+
+    :param database: The target database connection.
+    :param source: The query source context; when ``None`` the source is
+        inferred from the current request.
+    :returns: The User-Agent string to use for the query.
+    """
     source = source or get_query_source_from_request()
     if user_agent_func := app.config["USER_AGENT_FUNC"]:
         return user_agent_func(database, source)
