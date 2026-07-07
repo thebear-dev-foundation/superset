@@ -71,7 +71,15 @@ def markdown(raw: str, markup_wrap: bool | None = False) -> str:
     )
     # pylint: disable=no-member
     # nh3 preserves supported link attributes and enforces a safe rel value.
-    safe = nh3.clean(safe, tags=safe_markdown_tags, attributes=safe_markdown_attrs)
+    # Explicit URL-scheme allowlist so the sanitizer does not rely on
+    # library defaults for security-sensitive filtering.
+    safe_markdown_schemes: set[str] = {"http", "https", "mailto"}
+    safe = nh3.clean(
+        safe,
+        tags=safe_markdown_tags,
+        attributes=safe_markdown_attrs,
+        url_schemes=safe_markdown_schemes,
+    )
     if markup_wrap:
         safe = Markup(safe)  # noqa: S704
     return safe
