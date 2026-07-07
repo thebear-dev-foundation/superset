@@ -1770,6 +1770,29 @@ def test_markdown_sanitizes_dangerous_content() -> None:
     assert "alert" not in result
 
 
+def test_markdown_strips_javascript_href() -> None:
+    raw = '<a href="javascript:alert(1)">click</a>'
+    result = markdown(raw)
+
+    assert "javascript" not in result.lower()
+    assert ">click</a>" in result
+
+
+def test_markdown_strips_data_href() -> None:
+    raw = '<a href="data:text/html,<script>alert(1)</script>">click</a>'
+    result = markdown(raw)
+
+    assert "data:" not in result.lower()
+    assert ">click</a>" in result
+
+
+def test_markdown_strips_javascript_img_src() -> None:
+    raw = '<img src="javascript:alert(1)" alt="x">'
+    result = markdown(raw)
+
+    assert "javascript" not in result.lower()
+
+
 def test_markdown_with_markup_wrap() -> None:
     result = markdown("**bold**", markup_wrap=True)
     from markupsafe import Markup
