@@ -158,5 +158,6 @@ class MachineAuthProviderFactory:
 
     @property
     def instance(self) -> MachineAuthProvider:
-        assert self._auth_provider is not None, "call init_app() first"
+        if self._auth_provider is None:
+            raise RuntimeError("call init_app() first")
         return self._auth_provider

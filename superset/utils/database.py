@@ -26,6 +26,7 @@ from sqlalchemy.sql import compiler
 from sqlalchemy.sql.ddl import CreateSequence
 
 from superset.constants import EXAMPLES_DB_UUID
+from superset.exceptions import SupersetException
 
 if TYPE_CHECKING:
     from superset.connectors.sqla.models import Database
@@ -84,7 +85,8 @@ def get_example_database() -> Database:
     # pylint: disable=import-outside-toplevel
 
     database = get_or_create_db("examples", app.config["SQLALCHEMY_EXAMPLES_URI"])
-    assert database is not None
+    if database is None:
+        raise SupersetException("Example database is not configured")
     return database
 
 
@@ -93,7 +95,8 @@ def get_main_database() -> Database:
 
     db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
     database = get_or_create_db("main", db_uri)
-    assert database is not None
+    if database is None:
+        raise SupersetException("Main database is not configured")
     return database
 
 
