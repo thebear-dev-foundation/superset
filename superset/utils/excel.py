@@ -51,7 +51,7 @@ def quote_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
     Uses the same detection logic as the CSV exporter (see
     :func:`superset.utils.csv.is_formula_injection_risk`) so that both
-    exporters neutralize the same set of dangerous values.
+    exporters treat the same set of values as dangerous.
     """
     for col in df.select_dtypes(include="object").columns:
         df[col] = df[col].apply(
