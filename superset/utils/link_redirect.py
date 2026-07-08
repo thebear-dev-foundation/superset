@@ -140,8 +140,13 @@ def is_safe_redirect_url(url: str) -> bool:
     # following a Location header).
     stripped = _URL_STRIPPED_CONTROL_CHARS.sub("", url.strip())
 
-    # Block protocol-relative URLs
-    if stripped.startswith("//") or stripped.startswith("\\\\"):
+    # Block protocol-relative URLs. Browsers normalize backslashes to forward
+    # slashes per the WHATWG URL spec, so mixed leading sequences such as
+    # ``/\``, ``\/`` and ``/\/`` (and their percent-encoded ``%5C`` forms) are
+    # all parsed as ``//host``. Normalize backslashes before the structural
+    # check so these do not slip past a plain leading-``//`` guard.
+    normalized = re.sub(r"\\|%5[Cc]", "/", stripped)
+    if normalized.startswith("//"):
         return False
 
     parsed = urlparse(stripped)
