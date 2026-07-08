@@ -23,6 +23,7 @@ from typing import Any
 import pandas as pd
 
 from superset.utils.core import GenericDataType
+from superset.utils.csv import is_formula_injection_risk
 
 # Fixed, neutral timestamp applied to workbook document properties so that
 # exported files do not carry an environment-specific generation time.
@@ -47,15 +48,15 @@ NEUTRAL_DOCUMENT_PROPERTIES: dict[str, Any] = {
 def quote_formulas(df: pd.DataFrame) -> pd.DataFrame:
     """
     Make sure to quote any formulas for security reasons.
-    """
-    formula_prefixes = {"=", "+", "-", "@"}
 
+    Uses the same detection logic as the CSV exporter (see
+    :func:`superset.utils.csv.is_formula_injection_risk`) so that both
+    exporters treat the same set of values as dangerous.
+    """
     for col in df.select_dtypes(include="object").columns:
         df[col] = df[col].apply(
             lambda x: (
-                f"'{x}"
-                if isinstance(x, str) and len(x) and x[0] in formula_prefixes
-                else x
+                f"'{x}" if isinstance(x, str) and is_formula_injection_risk(x) else x
             )
         )
 
