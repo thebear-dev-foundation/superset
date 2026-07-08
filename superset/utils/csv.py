@@ -45,16 +45,28 @@ negative_number_re = re.compile(r"^-[0-9.]+$")
 problematic_chars_re = re.compile(r'^(?:"{2}|\s{1,})(?=[\-@+|=%])|^[\-@+|=%\t\r]')
 
 
+def is_formula_injection_risk(value: str) -> bool:
+    """
+    Determine whether a string value could be interpreted as a formula by a
+    spreadsheet program and therefore needs to be neutralized on export.
+
+    This is the shared detection logic used by both the CSV and Excel
+    exporters so that both escape the same set of dangerous values.
+
+    http://georgemauer.net/2017/10/07/csv-injection.html
+    """
+    needs_escaping = problematic_chars_re.match(value) is not None
+    is_negative_number = negative_number_re.match(value) is not None
+    return needs_escaping and not is_negative_number
+
+
 def escape_value(value: str) -> str:
     """
     Escapes a set of special characters.
 
     http://georgemauer.net/2017/10/07/csv-injection.html
     """
-    needs_escaping = problematic_chars_re.match(value) is not None
-    is_negative_number = negative_number_re.match(value) is not None
-
-    if needs_escaping and not is_negative_number:
+    if is_formula_injection_risk(value):
         # Escape pipe to be extra safe as this
         # can lead to remote code execution
         value = value.replace("|", "\\|")

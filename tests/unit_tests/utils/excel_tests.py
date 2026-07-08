@@ -27,6 +27,7 @@ from superset.utils.excel import (
     apply_column_types,
     df_to_excel,
     NEUTRAL_TIMESTAMP,
+    quote_formulas,
 )
 
 
@@ -50,6 +51,38 @@ def test_quote_formulas() -> None:
         "'=SUM(A1:A2)",
         "normal",
         "'@SUM(A1:A2)",
+    ]
+
+
+def test_quote_formulas_matches_csv_character_set() -> None:
+    """
+    Test that Excel export neutralizes the same set of dangerous values as the
+    CSV export (pipe, percent, leading tab/carriage return, and payloads
+    prefixed by whitespace or a pair of double quotes).
+    """
+    df = pd.DataFrame(
+        {
+            "value": [
+                "|cmd",
+                "%00=1+1",
+                "\t=1+1",
+                "\r=1+1",
+                " =1+1",
+                '""=1+1',
+                "-10",
+                "safe",
+            ]
+        }
+    )
+    assert quote_formulas(df)["value"].tolist() == [
+        "'|cmd",
+        "'%00=1+1",
+        "'\t=1+1",
+        "'\r=1+1",
+        "' =1+1",
+        '\'""=1+1',
+        "-10",
+        "safe",
     ]
 
 
