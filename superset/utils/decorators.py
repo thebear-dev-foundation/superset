@@ -39,11 +39,12 @@ if TYPE_CHECKING:
 
 
 def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
-    def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
-        """
-        Handle sending statsd gauge metric from any method or function
-        """
+    """
+    Handle sending statsd gauge metric from any method or function.
+    """
 
+    def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             metric_prefix_ = metric_prefix or f.__name__
             try:
@@ -76,6 +77,7 @@ def logs_context(
     """
 
     def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             if not hasattr(g, "logs_context"):
                 g.logs_context = {}
@@ -153,10 +155,21 @@ def stats_timing(stats_key: str, stats_logger: BaseStatsLogger) -> Iterator[floa
 
 
 def arghash(args: Any, kwargs: Any) -> int:
-    """Simple argument hash with kwargs sorted."""
-    sorted_args = tuple(
-        x if hasattr(x, "__repr__") else x for x in [*args, *sorted(kwargs.items())]
-    )
+    """Simple argument hash with kwargs sorted.
+
+    Unhashable arguments (e.g. lists or dicts) are replaced by their ``repr``
+    so that callers such as :func:`debounce` can hash the result without
+    raising ``TypeError``.
+    """
+
+    def make_hashable(value: Any) -> Any:
+        try:
+            hash(value)
+        except TypeError:
+            return repr(value)
+        return value
+
+    sorted_args = tuple(make_hashable(x) for x in [*args, *sorted(kwargs.items())])
     return hash(sorted_args)
 
 
@@ -168,6 +181,7 @@ def debounce(duration: float | int = 0.1) -> Callable[..., Any]:
     def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
         last: dict[str, Any] = {"t": None, "input": None, "output": None}
 
+        @wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             now = time.time()
             updated_hash = arghash(args, kwargs)

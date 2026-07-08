@@ -92,6 +92,7 @@ def parse_human_datetime(human_readable: str) -> datetime:
 
 
 def normalize_time_delta(human_readable: str) -> dict[str, int]:
+    """Parse a phrase like ``"3 days ago"`` into a signed timedelta kwargs dict."""
     x_unit = r"^\s*([0-9]+)\s+(second|minute|hour|day|week|month|quarter|year)s?\s+(ago|later)*$"  # noqa: E501
     matched = re.match(x_unit, human_readable, re.IGNORECASE)
     if not matched:
@@ -104,6 +105,7 @@ def normalize_time_delta(human_readable: str) -> dict[str, int]:
 
 
 def dttm_from_timetuple(date_: struct_time) -> datetime:
+    """Build a ``datetime`` from the date and time fields of a ``struct_time``."""
     return datetime(
         date_.tm_year,
         date_.tm_mon,
@@ -118,6 +120,7 @@ def get_past_or_future(
     human_readable: str | None,
     source_time: datetime | None = None,
 ) -> datetime:
+    """Resolve a natural-language date relative to ``source_time`` (or now)."""
     cal = parsedatetime.Calendar()
     source_dttm = dttm_from_timetuple(
         source_time.timetuple() if source_time else datetime.now().timetuple()
@@ -822,6 +825,7 @@ class EvalHolidayFunc:  # pylint: disable=too-few-public-methods
 
 @lru_cache(maxsize=LRU_CACHE_MAX_SIZE)
 def datetime_parser() -> ParseResults:  # pylint: disable=too-many-locals
+    """Build and cache the pyparsing grammar for Superset datetime expressions."""
     (  # pylint: disable=invalid-name
         DATETIME,  # noqa: N806
         DATEADD,  # noqa: N806
@@ -923,6 +927,7 @@ def datetime_parser() -> ParseResults:  # pylint: disable=too-many-locals
 
 
 def datetime_eval(datetime_expression: str | None = None) -> datetime | None:
+    """Evaluate a Superset datetime expression string to a ``datetime``."""
     if datetime_expression:
         try:
             return datetime_parser().parseString(datetime_expression)[0].eval()

@@ -140,6 +140,7 @@ def send_mime_email(
     config: dict[str, Any],
     dryrun: bool = False,
 ) -> None:
+    """Send a prepared MIME message over SMTP using the given config."""
     smtp_host = config["SMTP_HOST"]
     smtp_port = config["SMTP_PORT"]
     smtp_user = config["SMTP_USER"]
