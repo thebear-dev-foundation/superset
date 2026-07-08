@@ -132,6 +132,26 @@ def test_unsafe_protocol_relative(app: Flask) -> None:
     assert not is_safe_redirect_url("//evil.com/x")
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/\\evil.com",  # forward slash then backslash
+        "\\/evil.com",  # backslash then forward slash
+        "/\\/evil.com",  # slash-backslash-slash
+        "\\\\evil.com",  # double backslash
+        "/%5Cevil.com",  # percent-encoded backslash
+        "%5C/evil.com",
+        "/%5c/evil.com",  # lower-case percent-encoded backslash
+        "/%09/\\evil.com",  # tab then mixed slashes
+    ],
+)
+def test_unsafe_backslash_protocol_relative(app: Flask, url: str) -> None:
+    """Browsers normalize backslashes to forward slashes per the WHATWG URL
+    spec, so mixed leading slash/backslash sequences are parsed as ``//host``
+    (a protocol-relative URL) and must be rejected as an open-redirect."""
+    assert not is_safe_redirect_url(url)
+
+
 def test_unsafe_empty(app: Flask) -> None:
     assert not is_safe_redirect_url("")
     assert not is_safe_redirect_url("   ")
