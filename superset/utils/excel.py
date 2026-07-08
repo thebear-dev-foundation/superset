@@ -63,6 +63,7 @@ def quote_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def df_to_excel(df: pd.DataFrame, **kwargs: Any) -> Any:
+    """Serialize a dataframe to an in-memory Excel workbook and return its bytes."""
     output = io.BytesIO()
 
     # make sure formulas are quoted, to prevent malicious injections

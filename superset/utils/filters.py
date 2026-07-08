@@ -27,6 +27,7 @@ def get_dataset_access_filters(
     base_model: type[Model],
     *args: Any,
 ) -> BooleanClauseList:
+    """Build a SQLAlchemy clause limiting datasets to those the user can access."""
     # pylint: disable=import-outside-toplevel
     from superset import security_manager
     from superset.connectors.sqla.models import Database
