@@ -16,6 +16,7 @@
 # under the License.
 """CSV export, escaping, and chart data retrieval utilities."""
 
+import contextlib
 import logging
 import re
 import urllib.request
@@ -151,26 +152,24 @@ def get_chart_csv_data(
         opener = urllib.request.build_opener()
         cookie_str = ";".join([f"{key}={val}" for key, val in auth_cookies.items()])
         opener.addheaders.append(("Cookie", cookie_str))
-        response = opener.open(chart_url, timeout=timeout)
-        if response.getcode() != 200:
-            response.close()
-            raise URLError(response.getcode())
+        with contextlib.closing(opener.open(chart_url, timeout=timeout)) as response:
+            if response.getcode() != 200:
+                raise URLError(response.getcode())
 
-        chunks: list[bytes] = []
-        bytes_read = 0
-        while True:
-            chunk = response.read(64 * 1024)
-            if not chunk:
-                break
-            bytes_read += len(chunk)
-            if bytes_read > max_response_bytes:
-                response.close()
-                raise ValueError(
-                    f"Response exceeded the maximum allowed size "
-                    f"of {max_response_bytes} bytes."
-                )
-            chunks.append(chunk)
-        content = b"".join(chunks)
+            chunks: list[bytes] = []
+            bytes_read = 0
+            while True:
+                chunk = response.read(64 * 1024)
+                if not chunk:
+                    break
+                bytes_read += len(chunk)
+                if bytes_read > max_response_bytes:
+                    raise ValueError(
+                        f"Response exceeded the maximum allowed size "
+                        f"of {max_response_bytes} bytes."
+                    )
+                chunks.append(chunk)
+            content = b"".join(chunks)
     if content:
         return content
     return None
