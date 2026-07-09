@@ -226,6 +226,7 @@ def etag_cache(  # noqa: C901
                 return f(*args, **kwargs)
 
             response = None
+            cache_key: str | None = None
             try:
                 # build the cache key from the function arguments and any
                 # other additional GET arguments (like `form_data`, eg).
@@ -280,7 +281,8 @@ def etag_cache(  # noqa: C901
 
                 # if we have a cache, store the response from the request
                 try:
-                    cache.set(cache_key, response, timeout=timeout)
+                    if cache_key is not None:
+                        cache.set(cache_key, response, timeout=timeout)
                 except (OSError, ValueError, TypeError):
                     if app.debug:
                         raise
