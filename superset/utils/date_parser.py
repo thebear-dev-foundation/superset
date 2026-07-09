@@ -678,6 +678,7 @@ class EvalText:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a quoted string literal."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the string literal token produced by the parser."""
         self.value = tokens[0]
 
     def eval(self) -> str:
@@ -690,6 +691,7 @@ class EvalDateTimeFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a datetime() expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``datetime()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> datetime:
@@ -701,6 +703,7 @@ class EvalDateAddFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a dateadd(datetime, delta, unit) expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``dateadd()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> datetime:
@@ -718,6 +721,7 @@ class EvalDateDiffFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a datediff(start, end[, unit]) expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``datediff()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> int:
@@ -739,6 +743,7 @@ class EvalDateTruncFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a datetrunc(datetime, unit) expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``datetrunc()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> datetime:
@@ -773,6 +778,7 @@ class EvalLastDayFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that evaluates a lastday(datetime, unit) expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``lastday()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> datetime:
@@ -801,6 +807,7 @@ class EvalHolidayFunc:  # pylint: disable=too-few-public-methods
     """Parse-action node that resolves a holiday expression."""
 
     def __init__(self, tokens: ParseResults) -> None:
+        """Capture the argument tokens of the ``holiday()`` expression."""
         self.value = tokens[1]
 
     def eval(self) -> datetime:
