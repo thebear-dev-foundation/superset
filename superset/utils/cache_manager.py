@@ -205,6 +205,7 @@ class CacheManager:
     """Central registry that initializes and exposes all Superset cache instances."""
 
     def __init__(self) -> None:
+        """Initialize the cache backends managed by this registry."""
         super().__init__()
 
         self._cache = SupersetCache()

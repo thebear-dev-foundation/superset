@@ -330,6 +330,7 @@ class SigalrmTimeout:
     """
 
     def __init__(self, seconds: int = 1, error_message: str = "Timeout") -> None:
+        """Store the timeout duration and the error message to raise on expiry."""
         self.seconds = seconds
         self.error_message = error_message
 
@@ -344,6 +345,7 @@ class SigalrmTimeout:
         )
 
     def __enter__(self) -> None:
+        """Arm the ``SIGALRM`` handler and start the timeout countdown."""
         try:
             if threading.current_thread() == threading.main_thread():
                 signal.signal(signal.SIGALRM, self.handle_timeout)
@@ -353,6 +355,7 @@ class SigalrmTimeout:
             logger.exception(ex)
 
     def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
+        """Cancel the pending alarm when leaving the ``with`` block."""
         try:
             signal.alarm(0)
         except ValueError as ex:
@@ -379,14 +382,17 @@ class TimerTimeout:
     """
 
     def __init__(self, seconds: int = 1, error_message: str = "Timeout") -> None:
+        """Store the timeout settings and prepare the interrupting timer."""
         self.seconds = seconds
         self.error_message = error_message
         self.timer = threading.Timer(seconds, _thread.interrupt_main)
 
     def __enter__(self) -> None:
+        """Start the timer that interrupts the main thread on timeout."""
         self.timer.start()
 
     def __exit__(self, type: Any, value: Any, traceback: TracebackType) -> None:
+        """Cancel the timer and raise a timeout error if it fired."""
         self.timer.cancel()
         if type is KeyboardInterrupt:  # raised by _thread.interrupt_main
             raise SupersetTimeoutException(
