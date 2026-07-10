@@ -40,6 +40,7 @@ class SupersetProfiler:  # pylint: disable=too-few-public-methods
         app: Callable[[Any, Any], Any],
         interval: float = 0.0001,
     ):
+        """Store the wrapped app and the sampling interval."""
         self.app = app
         self.interval = interval
 

@@ -325,9 +325,7 @@ def get_datasource_full_name(
 
 
 class SigalrmTimeout:
-    """
-    To be used in a ``with`` block and timeout its content.
-    """
+    """To be used in a ``with`` block and timeout its content."""
 
     def __init__(self, seconds: int = 1, error_message: str = "Timeout") -> None:
         """Store the timeout duration and the error message to raise on expiry."""
@@ -1388,9 +1386,7 @@ def apply_max_row_limit(
 
 
 def remove_extra_adhoc_filters(form_data: dict[str, Any]) -> None:
-    """
-    Remove filters from slice data that originate from a filter box or native filter
-    """
+    """Remove filters originating from a filter box or native filter."""
     adhoc_filters = {
         key: value for key, value in form_data.items() if ADHOC_FILTERS_REGEX.match(key)
     }

@@ -15,9 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""
-Centralized version metadata utilities for Apache Superset.
-"""
+"""Centralized version metadata utilities for Apache Superset."""
 
 import logging
 import os

@@ -153,6 +153,7 @@ class ChartStandaloneMode(Enum):
 # pylint: disable=too-few-public-methods
 class WebDriverProxy(ABC):
     def __init__(self, driver_type: str, window: WindowSize | None = None):
+        """Store the driver type and window size for the proxy."""
         self._driver_type = driver_type
         self._window: WindowSize = window or (800, 600)
         self._screenshot_locate_wait = app.config["SCREENSHOT_LOCATE_WAIT"]
@@ -160,9 +161,7 @@ class WebDriverProxy(ABC):
 
     @abstractmethod
     def get_screenshot(self, url: str, element_name: str, user: User) -> bytes | None:
-        """
-        Run webdriver and return a screenshot
-        """
+        """Run webdriver and return a screenshot"""
 
 
 class WebDriverPlaywright(WebDriverProxy):

@@ -44,9 +44,11 @@ class DateColumn:
     time_shift: str | None = None
 
     def __hash__(self) -> int:
+        """Return the hash based on the column label."""
         return hash(self.col_label)
 
     def __eq__(self, other: object) -> bool:
+        """Return whether two ``DateColumn`` instances are equal."""
         return isinstance(other, DateColumn) and hash(self) == hash(other)
 
     @classmethod

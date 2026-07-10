@@ -25,6 +25,7 @@ from superset.tags.models import ObjectType
 
 class RegexConverter(BaseConverter):
     def __init__(self, url_map: Map, *items: list[str]) -> None:
+        """Initialize the converter with the URL map and regex pattern."""
         super().__init__(url_map)
         self.regex = items[0]
 

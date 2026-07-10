@@ -154,10 +154,12 @@ class AbstractEventLogger(ABC):
         return self
 
     def __enter__(self) -> None:
+        """Record the start time when entering the context."""
         # pylint: disable=W0201
         self.start = datetime.now()
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Log the recorded context and duration when exiting the context."""
         # Log data w/ arguments being passed in
         self.log_with_context(
             action=self.action,

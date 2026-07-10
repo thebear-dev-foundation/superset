@@ -49,6 +49,7 @@ class MachineAuthProvider:
         ]
         | None = None,
     ):
+        """Store the optional override for the authentication function."""
         # This is here in order to allow for the authenticate_webdriver
         # or authenticate_browser_context (if PLAYWRIGHT_REPORTS_AND_THUMBNAILS is
         # enabled) func to be overridden via config, as opposed to the entire
@@ -149,6 +150,7 @@ class MachineAuthProvider:
 
 class MachineAuthProviderFactory:
     def __init__(self) -> None:
+        """Initialize the factory without a bound auth provider."""
         self._auth_provider: MachineAuthProvider | None = None
 
     def init_app(self, app: Flask) -> None:

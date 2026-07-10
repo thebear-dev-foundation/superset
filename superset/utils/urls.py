@@ -70,9 +70,7 @@ def get_url_path(view: str, user_friendly: bool = False, **kwargs: Any) -> str:
 
 
 def modify_url_query(url: str, **kwargs: Any) -> str:
-    """
-    Replace or add parameters to a URL.
-    """
+    """Replace or add parameters to a URL."""
     parts = list(urllib.parse.urlsplit(url))
     params = urllib.parse.parse_qs(parts[3])
     for k, v in kwargs.items():

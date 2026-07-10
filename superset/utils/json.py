@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 class DashboardEncoder(simplejson.JSONEncoder):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the encoder and force keys to be sorted."""
         super().__init__(*args, **kwargs)
         self.sort_keys = True
 

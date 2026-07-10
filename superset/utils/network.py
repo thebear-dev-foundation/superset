@@ -22,9 +22,7 @@ PORT_TIMEOUT = 5
 
 
 def is_port_open(host: str, port: int) -> bool:
-    """
-    Test if a given port in a host is open.
-    """
+    """Test if a given port in a host is open."""
     # pylint: disable=invalid-name
     for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
         af, _, _, _, sockaddr = res
@@ -42,9 +40,7 @@ def is_port_open(host: str, port: int) -> bool:
 
 
 def is_hostname_valid(host: str) -> bool:
-    """
-    Test if a given hostname can be resolved.
-    """
+    """Test if a given hostname can be resolved."""
     try:
         socket.getaddrinfo(host, None)
         return True

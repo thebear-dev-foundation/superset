@@ -49,7 +49,5 @@ def unmask_password_info(
 
 
 def get_default_port(backend: str) -> int | None:
-    """
-    Get the default port for the given backend.
-    """
+    """Get the default port for the given backend."""
     return DEFAULT_PORTS.get(backend)

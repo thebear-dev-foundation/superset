@@ -208,9 +208,7 @@ def refresh_oauth2_token(
 
 
 def encode_oauth2_state(state: OAuth2State) -> str:
-    """
-    Encode the OAuth2 state.
-    """
+    """Encode the OAuth2 state."""
     payload: dict[str, Any] = {
         "exp": datetime.now(tz=timezone.utc) + JWT_EXPIRATION,
         "database_id": state["database_id"],
@@ -260,9 +258,7 @@ oauth2_state_schema = OAuth2StateSchema()
 
 
 def decode_oauth2_state(encoded_state: str) -> OAuth2State:
-    """
-    Decode the OAuth2 state.
-    """
+    """Decode the OAuth2 state."""
     # Google OAuth2 needs periods to be escaped.
     encoded_state = encoded_state.replace("%2E", ".")
 
@@ -316,9 +312,7 @@ class OAuth2ClientConfigSchema(Schema):
 
 @contextmanager
 def check_for_oauth2(database: Database) -> Iterator[None]:
-    """
-    Run code and check if OAuth2 is needed.
-    """
+    """Run code and check if OAuth2 is needed."""
     try:
         yield
     except Exception as ex:  # noqa: BLE001 — catch-all required: needs_oauth2() inspects arbitrary DB-driver exceptions

@@ -30,6 +30,7 @@ class JinjaValidationError(Exception):
     """Exception raised when Jinja2 template validation fails."""
 
     def __init__(self, message: str):
+        """Store the validation error message."""
         self.message = message
         super().__init__(message)
 
@@ -112,9 +113,7 @@ def validate_jinja_template_in_params(params: Dict[str, Any]) -> None:
 
 
 def validate_params_json_with_jinja(value: str | None) -> None:
-    """
-    Validates that params is valid JSON and contains valid Jinja2 templates.
-    """
+    """Validates that params is valid JSON and contains valid Jinja2 templates."""
     if value is None:
         return
 
