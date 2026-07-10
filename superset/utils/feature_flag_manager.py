@@ -34,8 +34,10 @@ class FeatureFlagManager:
         """Bind the manager to a Flask app and load its feature-flag config."""
         self._get_feature_flags_func = app.config["GET_FEATURE_FLAGS_FUNC"]
         self._is_feature_enabled_func = app.config["IS_FEATURE_ENABLED_FUNC"]
-        self._feature_flags = app.config["DEFAULT_FEATURE_FLAGS"]
-        self._feature_flags.update(app.config["FEATURE_FLAGS"])
+        self._feature_flags = {
+            **app.config["DEFAULT_FEATURE_FLAGS"],
+            **app.config["FEATURE_FLAGS"],
+        }
 
     def get_feature_flags(self) -> dict[str, bool]:
         """Return the resolved set of feature flags."""

@@ -14,13 +14,34 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+from flask import Flask
 from pytest_mock import MockerFixture
 
 from superset import is_feature_enabled
+from superset.utils.feature_flag_manager import FeatureFlagManager
 
 
 def dummy_is_feature_enabled(feature_flag_name: str, default: bool = True) -> bool:
     return True if feature_flag_name.startswith("True_") else default
+
+
+def test_init_app_does_not_mutate_default_feature_flags() -> None:
+    app = Flask(__name__)
+    app.config.update(
+        DEFAULT_FEATURE_FLAGS={"DEFAULT": False},
+        FEATURE_FLAGS={"DEFAULT": True, "OVERRIDE": True},
+        GET_FEATURE_FLAGS_FUNC=None,
+        IS_FEATURE_ENABLED_FUNC=None,
+    )
+
+    feature_flag_manager = FeatureFlagManager()
+    feature_flag_manager.init_app(app)
+
+    assert app.config["DEFAULT_FEATURE_FLAGS"] == {"DEFAULT": False}
+    assert feature_flag_manager.get_feature_flags() == {
+        "DEFAULT": True,
+        "OVERRIDE": True,
+    }
 
 
 def test_existing_feature_flags(mocker: MockerFixture) -> None:
