@@ -193,9 +193,7 @@ class FilterStringOperators(StrEnum):
 
 
 class PostProcessingBoxplotWhiskerType(StrEnum):
-    """
-    Calculate cell contribution to row/column total
-    """
+    """Method used to compute box plot whisker bounds."""
 
     TUKEY = "tukey"
     MINMAX = "min/max"
@@ -203,9 +201,7 @@ class PostProcessingBoxplotWhiskerType(StrEnum):
 
 
 class PostProcessingContributionOrientation(StrEnum):
-    """
-    Calculate cell contribution to row/column total
-    """
+    """Axis along which post-processing contribution percentages are computed."""
 
     ROW = "row"
     COLUMN = "column"
