@@ -44,10 +44,12 @@ class DateColumn:
     time_shift: str | None = None
 
     def __hash__(self) -> int:
+        """Hash the column by its identifying label."""
         return hash(self.col_label)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, DateColumn) and hash(self) == hash(other)
+        """Compare columns by their identifying label."""
+        return isinstance(other, DateColumn) and self.col_label == other.col_label
 
     @classmethod
     def get_legacy_time_column(
