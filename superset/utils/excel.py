@@ -23,7 +23,7 @@ from typing import Any
 import pandas as pd
 
 from superset.utils.core import GenericDataType
-from superset.utils.csv import is_formula_injection_risk
+from superset.utils.csv import escape_value, is_formula_injection_risk
 
 # Fixed, neutral timestamp applied to workbook document properties so that
 # exported files do not carry an environment-specific generation time.
@@ -51,8 +51,15 @@ def quote_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
     Uses the same detection logic as the CSV exporter (see
     :func:`superset.utils.csv.is_formula_injection_risk`) so that both
-    exporters treat the same set of values as dangerous.
+    exporters treat the same set of values as dangerous.  Both the column
+    headers and the string cell values are neutralized, mirroring the CSV
+    path (see :func:`superset.utils.csv.df_to_escaped_csv`).
     """
+    # Escape column headers, which are written verbatim as the first row of
+    # the exported workbook and are attacker-influenceable (e.g. a query
+    # column alias or a metric/dataset verbose name).
+    df = df.rename(columns=lambda x: escape_value(x) if isinstance(x, str) else x)
+
     for col in df.select_dtypes(include="object").columns:
         df[col] = df[col].apply(
             lambda x: (

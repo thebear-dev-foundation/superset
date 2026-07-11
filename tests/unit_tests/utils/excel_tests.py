@@ -86,6 +86,37 @@ def test_quote_formulas_matches_csv_character_set() -> None:
     ]
 
 
+def test_quote_formulas_escapes_dangerous_column_headers() -> None:
+    """
+    Test that dangerous column headers are neutralized so they cannot carry an
+    unescaped leading formula character into the first row of the workbook,
+    mirroring the CSV exporter's header escaping.
+    """
+    df = pd.DataFrame(
+        {
+            '=HYPERLINK("http://evil","x")': ["a", "b"],
+            "=cmd|'/c calc'!A0": ["c", "d"],
+            "safe": ["e", "f"],
+        }
+    )
+    escaped = quote_formulas(df)
+    assert escaped.columns.tolist() == [
+        '\'=HYPERLINK("http://evil","x")',
+        "'=cmd\\|'/c calc'!A0",
+        "safe",
+    ]
+
+
+def test_df_to_excel_escapes_dangerous_column_headers() -> None:
+    """
+    Test that a dangerous column header is written escaped into the exported
+    workbook's header row.
+    """
+    df = pd.DataFrame({"=SUM(A1:A2)": ["x"], "safe": ["y"]})
+    contents = df_to_excel(df, index=False)
+    assert pd.read_excel(contents).columns.tolist() == ["'=SUM(A1:A2)", "safe"]
+
+
 def test_document_properties_are_neutral() -> None:
     """
     Test that exported workbooks do not carry identifying document properties.
