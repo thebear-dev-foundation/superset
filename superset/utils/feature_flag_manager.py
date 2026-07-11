@@ -25,6 +25,7 @@ class FeatureFlagManager:
     """Registry for reading and evaluating Superset feature flags."""
 
     def __init__(self) -> None:
+        """Initialize the manager with empty feature-flag state."""
         super().__init__()
         self._get_feature_flags_func = None
         self._is_feature_enabled_func = None

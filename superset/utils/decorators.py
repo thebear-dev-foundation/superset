@@ -39,9 +39,7 @@ if TYPE_CHECKING:
 
 
 def statsd_gauge(metric_prefix: str | None = None) -> Callable[..., Any]:
-    """
-    Handle sending statsd gauge metric from any method or function.
-    """
+    """Handle sending statsd gauge metric from any method or function."""
 
     def decorate(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)

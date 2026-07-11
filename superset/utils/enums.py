@@ -56,9 +56,7 @@ class AnnotationType(StrEnum):
 
 
 class GenericDataType(IntEnum):
-    """
-    Generic database column type that fits both frontend and backend.
-    """
+    """Generic database column type that fits both frontend and backend."""
 
     NUMERIC = 0
     STRING = 1
@@ -149,9 +147,7 @@ class ExtraFiltersReasonType(StrEnum):
 
 
 class FilterOperator(StrEnum):
-    """
-    Operators used filter controls
-    """
+    """Operators used filter controls"""
 
     EQUALS = "=="
     NOT_EQUALS = "!="
@@ -208,9 +204,7 @@ class PostProcessingContributionOrientation(StrEnum):
 
 
 class QuerySource(Enum):
-    """
-    The source of a SQL query.
-    """
+    """The source of a SQL query."""
 
     CHART = 0
     DASHBOARD = 1

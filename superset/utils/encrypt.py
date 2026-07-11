@@ -98,6 +98,7 @@ class EncryptedFieldFactory:
     """Application-scoped factory for encrypted column types."""
 
     def __init__(self) -> None:
+        """Initialize the factory with no configured adapter."""
         self._concrete_type_adapter: Optional[AbstractEncryptedFieldAdapter] = None
         self._config: Optional[dict[str, Any]] = None
 
@@ -147,6 +148,7 @@ class SecretsMigrator:
     """Re-encrypts all encrypted ORM columns after a SECRET_KEY rotation."""
 
     def __init__(self, previous_secret_key: str) -> None:
+        """Store the previous SECRET_KEY used to decrypt existing values."""
         from superset import db  # pylint: disable=import-outside-toplevel
 
         self._db = db
