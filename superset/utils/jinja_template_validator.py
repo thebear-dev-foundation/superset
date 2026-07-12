@@ -17,7 +17,7 @@ specific language governing permissions and limitations
 under the License.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from jinja2 import TemplateError, TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
@@ -77,7 +77,7 @@ def _check_filter_clause(clause: str) -> None:
             ) from e
 
 
-def _check_filter_dict(filter_dict: Dict[str, Any]) -> None:
+def _check_filter_dict(filter_dict: dict[str, Any]) -> None:
     """Check SQL expressions in a filter dictionary."""
     if not isinstance(filter_dict, dict):
         return
@@ -91,7 +91,7 @@ def _check_filter_dict(filter_dict: Dict[str, Any]) -> None:
         _check_filter_clause(clause)
 
 
-def validate_jinja_template_in_params(params: Dict[str, Any]) -> None:
+def validate_jinja_template_in_params(params: dict[str, Any]) -> None:
     """
     Validates Jinja2 templates in chart parameters.
     This function checks adhoc_filters and other fields that might contain Jinja2.
