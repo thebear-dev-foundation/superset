@@ -22,9 +22,9 @@ import os
 import random
 import string
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import date, datetime, time, timedelta
-from typing import Any, Callable, cast, Optional, TypedDict
+from typing import Any, cast, TypedDict
 from uuid import uuid4
 
 import sqlalchemy.sql.sqltypes
@@ -54,7 +54,7 @@ class ColumnInfo(TypedDict):
     name: str
     type: VisitableType
     nullable: bool
-    default: Optional[Any]
+    default: Any | None
     autoincrement: str
     primary_key: int
 
@@ -177,7 +177,7 @@ def get_type_generator(  # pylint: disable=too-many-return-statements,too-many-b
 
 
 def add_data(
-    columns: Optional[list[ColumnInfo]],
+    columns: list[ColumnInfo] | None,
     num_rows: int,
     table_name: str,
     append: bool = True,
@@ -187,7 +187,7 @@ def add_data(
 
     If the table already exists `columns` can be `None`.
 
-    :param Optional[List[ColumnInfo]] columns: list of column names and types to create
+    :param columns: list of column names and types to create; ``None`` if table exists
     :param int num_rows: how many rows to generate and insert
     :param str table_name: name of table, will be created if it doesn't exist
     :param bool append: if the table already exists, append data or replace?
@@ -260,7 +260,7 @@ def add_sample_rows(model: type[Model], count: int) -> Iterator[Model]:
     relationships = inspector.relationships.items()
     samples = db.session.query(model).limit(count).all() if relationships else []
 
-    max_primary_key: Optional[int] = None
+    max_primary_key: int | None = None
     for i in range(count):
         sample = samples[i % len(samples)] if samples else None
         kwargs = {}
