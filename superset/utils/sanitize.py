@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from urllib.parse import urlparse
 
 import markdown as md
@@ -26,6 +27,28 @@ import nh3
 from markupsafe import Markup
 
 logger = logging.getLogger(__name__)
+
+# Characters that browsers remove from URLs during parsing per the WHATWG
+# URL spec (TAB, LF, CR). Both literal and percent-encoded forms must be
+# stripped before any structural check, otherwise a path like
+# ``/%09//host`` slips past a leading-``//`` guard because the percent-
+# encoded TAB only disappears after the browser parses the URL.
+_URL_STRIPPED_CONTROL_CHARS = re.compile(r"[\t\n\r]|%09|%0[ADad]")
+
+# Browsers normalize backslashes to forward slashes per the WHATWG URL spec,
+# so mixed leading sequences such as ``/\``, ``\/`` and ``/\/`` (and their
+# percent-encoded ``%5C`` forms) are all parsed as ``//host``.
+_URL_BACKSLASHES = re.compile(r"\\|%5[Cc]")
+
+
+def strip_url_control_chars(url: str) -> str:
+    """Remove TAB/LF/CR (and percent-encoded forms) that browsers strip."""
+    return _URL_STRIPPED_CONTROL_CHARS.sub("", url)
+
+
+def normalize_url_backslashes(url: str) -> str:
+    """Normalize backslashes (and ``%5C``) to forward slashes."""
+    return _URL_BACKSLASHES.sub("/", url)
 
 
 def markdown(raw: str, markup_wrap: bool | None = False) -> str:
@@ -233,22 +256,29 @@ def sanitize_url(url: str) -> str:
     if not url or not url.strip():
         return ""
 
-    url = url.strip()
+    # Normalize the URL the same way a browser will before parsing (mirroring
+    # ``link_redirect.is_safe_redirect_url``): drop the TAB/LF/CR characters
+    # the WHATWG URL parser removes (plus their percent-encoded forms) and
+    # normalize backslashes to forward slashes. Otherwise payloads such as
+    # ``/\evil.com`` or ``/%5Cevil.com`` slip past the leading-``//`` guard
+    # yet are still fetched by the browser as ``//evil.com``.
+    stripped = strip_url_control_chars(url.strip())
+    normalized = normalize_url_backslashes(stripped)
 
     # Block protocol-relative URLs (//host/...) which bypass scheme checks
-    if url.startswith("//") or url.startswith("\\\\"):
+    if normalized.startswith("//"):
         return ""
 
     # Relative URLs are safe
-    if url.startswith("/"):
-        return url
+    if normalized.startswith("/"):
+        return stripped
 
     try:
-        parsed = urlparse(url)
+        parsed = urlparse(stripped)
 
         # Allow safe schemes only
         if parsed.scheme.lower() in {"http", "https"}:
-            return url
+            return stripped
 
         # Block everything else (javascript:, data:, etc.)
         return ""

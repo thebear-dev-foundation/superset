@@ -1737,6 +1737,30 @@ def test_sanitize_url_blocks_dangerous():
     assert sanitize_url("data:text/html,<script>alert(1)</script>") == ""
 
 
+def test_sanitize_url_blocks_backslash_protocol_relative():
+    """Backslash-based protocol-relative URLs are normalized and blocked.
+
+    Browsers normalize ``\\`` (and ``%5C``) to ``/`` per the WHATWG URL spec,
+    so these are equivalent to ``//host`` and must not slip past the guard.
+    """
+    assert sanitize_url("/\\evil.com") == ""
+    assert sanitize_url("\\/evil.com") == ""
+    assert sanitize_url("/\\/evil.com") == ""
+    assert sanitize_url("/%5Cevil.com") == ""
+    assert sanitize_url("\\\\evil.com") == ""
+    assert sanitize_url("/%5c%5cevil.com") == ""
+
+
+def test_sanitize_url_blocks_control_char_bypass():
+    """Control chars (and percent-encoded forms) are stripped before checks."""
+    assert sanitize_url("/\t/evil.com") == ""
+    assert sanitize_url("/%09/evil.com") == ""
+    assert sanitize_url("/\n/evil.com") == ""
+    assert sanitize_url("/%0A/evil.com") == ""
+    assert sanitize_url("/%0d/evil.com") == ""
+    assert sanitize_url("/\\%09evil.com") == ""
+
+
 def test_markdown_basic() -> None:
     result = markdown("**bold**")
 

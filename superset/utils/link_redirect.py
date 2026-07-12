@@ -28,6 +28,11 @@ from urllib.parse import quote, urlparse
 
 from flask import current_app
 
+from superset.utils.sanitize import (
+    normalize_url_backslashes,
+    strip_url_control_chars,
+)
+
 logger = logging.getLogger(__name__)
 
 # Matches href="..." in anchor tags (both single and double quotes)
@@ -118,14 +123,6 @@ def process_html_links(html_content: str) -> str:
         return html_content
 
 
-# Characters that browsers remove from URLs during parsing per the WHATWG
-# URL spec (TAB, LF, CR). Both literal and percent-encoded forms must be
-# stripped before any structural check, otherwise a path like
-# ``/%09///host`` slips past a leading-``//`` guard because the percent-
-# encoded TAB only disappears after the browser parses the URL.
-_URL_STRIPPED_CONTROL_CHARS = re.compile(r"[\t\n\r]|%09|%0[ADad]")
-
-
 def is_safe_redirect_url(url: str) -> bool:
     """
     Return True if *url* is an internal Superset URL (safe to redirect to
@@ -138,14 +135,14 @@ def is_safe_redirect_url(url: str) -> bool:
     # the TAB/LF/CR characters that the WHATWG URL parser removes, plus
     # their percent-encoded forms (which some browsers also strip when
     # following a Location header).
-    stripped = _URL_STRIPPED_CONTROL_CHARS.sub("", url.strip())
+    stripped = strip_url_control_chars(url.strip())
 
     # Block protocol-relative URLs. Browsers normalize backslashes to forward
     # slashes per the WHATWG URL spec, so mixed leading sequences such as
     # ``/\``, ``\/`` and ``/\/`` (and their percent-encoded ``%5C`` forms) are
     # all parsed as ``//host``. Normalize backslashes before the structural
     # check so these do not slip past a plain leading-``//`` guard.
-    normalized = re.sub(r"\\|%5[Cc]", "/", stripped)
+    normalized = normalize_url_backslashes(stripped)
     if normalized.startswith("//"):
         return False
 
