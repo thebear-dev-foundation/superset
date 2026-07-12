@@ -37,6 +37,7 @@ def get_url_host(user_friendly: bool = False) -> str:
 
 
 def headless_url(path: str, user_friendly: bool = False) -> str:
+    """Join a path to the configured headless or user-facing base URL."""
     return urllib.parse.urljoin(get_url_host(user_friendly=user_friendly), path)
 
 
