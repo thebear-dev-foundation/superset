@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Flatten post-processing operation."""
 
 from collections.abc import Iterable, Sequence
 from typing import Any, Union
@@ -28,6 +29,7 @@ from superset.utils.pandas_postprocessing.utils import (
 
 
 def is_sequence(seq: Any) -> bool:
+    """Return whether the value is a non-string iterable."""
     if isinstance(seq, str):
         return False
 

@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Rolling window post-processing operation."""
+
 from typing import Any, Optional, Union
 
 from flask_babel import gettext as _
@@ -38,8 +40,10 @@ def rolling(  # pylint: disable=too-many-arguments
     win_type: Optional[str] = None,
     min_periods: Optional[int] = None,
 ) -> DataFrame:
-    """Apply a rolling window on the dataset. See the Pandas docs for further details:
-    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html.
+    """Apply a rolling window on the dataset.
+
+    See the Pandas docs for further details:
+    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html
 
     :param df: DataFrame on which the rolling period will be based.
     :param columns: columns on which to perform rolling, mapping source column to

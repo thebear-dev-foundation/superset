@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Contribution post-processing operation."""
 
 from __future__ import annotations
 
@@ -40,6 +41,7 @@ def contribution(
     contribution_totals: dict[str, float] | None = None,
 ) -> DataFrame:
     """Calculate cell contribution to row/column total for numeric columns.
+
     Non-numeric columns will be kept untouched.
 
     If `columns` are specified, only calculate contributions on selected columns.

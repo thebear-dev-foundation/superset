@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Prophet forecasting post-processing operation."""
+
 import logging
 from typing import Optional, Union
 
@@ -85,9 +87,11 @@ def prophet(  # pylint: disable=too-many-arguments
     daily_seasonality: Optional[Union[bool, int]] = None,
     index: Optional[str] = None,
 ) -> DataFrame:
-    """Add forecasts to each series in a timeseries dataframe, along with confidence
-    intervals for the prediction. For each series, the operation creates three
-    new columns with the column name suffixed with the following values:
+    """Add forecasts to each series in a timeseries dataframe.
+
+    Confidence intervals for the prediction are included. For each series, the
+    operation creates three new columns with the column name suffixed with the
+    following values:
 
     - `__yhat`: the forecast for the given date
     - `__yhat_lower`: the lower bound of the forecast for the given date

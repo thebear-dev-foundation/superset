@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Boxplot post-processing operation."""
+
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
@@ -34,8 +36,10 @@ def boxplot(  # noqa: C901
         Union[list[Union[int, float]], tuple[Union[int, float], Union[int, float]]]
     ] = None,
 ) -> DataFrame:
-    """Calculate boxplot statistics. For each metric, the operation creates eight
-    new columns with the column name suffixed with the following values:
+    """Calculate boxplot statistics.
+
+    For each metric, the operation creates eight new columns with the column name
+    suffixed with the following values:
 
     - `__mean`: the mean
     - `__median`: the median

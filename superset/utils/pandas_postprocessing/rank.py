@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Rank post-processing operation."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -24,7 +26,7 @@ def rank(
     metric: str,
     group_by: str | None = None,
 ) -> pd.DataFrame:
-    """Calculates the rank of a metric within a group.
+    """Calculate the rank of a metric within a group.
 
     :param df: N-dimensional DataFrame.
     :param metric: The metric to rank.
