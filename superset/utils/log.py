@@ -48,17 +48,51 @@ SENSITIVE_LOG_FIELDS: set[str] = {
     "secret",
     "private_key",
     "private_key_password",
+    "sqlalchemy_uri",
+    "sqlalchemy_uri_decrypted",
+    "encrypted_extra",
+    "masked_encrypted_extra",
+    "client_secret",
+    "api_key",
+    "credentials_info",
+    "service_account_info",
+    "authorization",
+    "session",
 }
 
 REDACTED_VALUE = "**REDACTED**"
 
+# Maximum nesting level inspected while redacting, to bound the work done on
+# deeply nested or maliciously crafted request bodies.
+MAX_REDACTION_DEPTH = 8
+
+
+def _redact_value(value: Any, depth: int) -> Any:
+    """Recursively redact sensitive keys within nested containers."""
+    if depth >= MAX_REDACTION_DEPTH:
+        return REDACTED_VALUE
+    if isinstance(value, dict):
+        return {
+            k: (
+                REDACTED_VALUE
+                if isinstance(k, str) and k.lower() in SENSITIVE_LOG_FIELDS
+                else _redact_value(v, depth + 1)
+            )
+            for k, v in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_value(item, depth + 1) for item in value]
+    return value
+
 
 def _redact_sensitive_fields(payload: dict[str, Any]) -> dict[str, Any]:
-    """Redact values of sensitive keys in a payload dict (case-insensitive)."""
-    return {
-        k: (REDACTED_VALUE if k.lower() in SENSITIVE_LOG_FIELDS else v)
-        for k, v in payload.items()
-    }
+    """Redact values of sensitive keys in a payload (case-insensitive, recursive).
+
+    Nested ``dict``/``list`` values (e.g. ``parameters``, ``ssh_tunnel``,
+    ``extra``) are inspected as well, and values of URI-like keys such as
+    ``sqlalchemy_uri`` are dropped entirely since they embed credentials.
+    """
+    return cast(dict[str, Any], _redact_value(payload, 0))
 
 
 def collect_request_payload() -> dict[str, Any]:
@@ -233,6 +267,9 @@ class AbstractEventLogger(ABC):
             payload["object_ref"] = object_ref
         if payload_override:
             payload.update(payload_override)
+        # redact again: `object_ref`/`payload_override` are caller supplied and
+        # could reintroduce secrets after `collect_request_payload()` redaction
+        payload = _redact_sensitive_fields(payload)
 
         dashboard_id = to_int(payload.get("dashboard_id"))
 
@@ -261,6 +298,7 @@ class AbstractEventLogger(ABC):
             # bulk insert
             explode_by = payload.get("explode")
             records = json.loads(payload.get(explode_by))  # type: ignore
+            records = _redact_value(records, 0)
         except (ValueError, TypeError, KeyError):
             logger.debug("Failed to parse bulk insert payload, using single record")
             records = [payload]
