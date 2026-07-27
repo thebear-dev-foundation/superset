@@ -137,8 +137,7 @@ def _get_aggregate_funcs(
     df: DataFrame,
     aggregates: dict[str, dict[str, Any]],
 ) -> dict[str, NamedAgg]:
-    """
-    Converts a set of aggregate config objects into functions that pandas can use as
+    """Converts a set of aggregate config objects into functions that pandas can use as
     aggregators. Currently only numpy aggregators are supported.
 
     :param df: DataFrame on which to perform aggregate operation.
@@ -184,8 +183,7 @@ def _get_aggregate_funcs(
 def _append_columns(
     base_df: DataFrame, append_df: DataFrame, columns: dict[str, str]
 ) -> DataFrame:
-    """
-    Function for adding columns from one DataFrame to another DataFrame. Calls the
+    """Function for adding columns from one DataFrame to another DataFrame. Calls the
     assign method, which overwrites the original column in `base_df` if the column
     already exists, and appends the column if the name is not defined.
 

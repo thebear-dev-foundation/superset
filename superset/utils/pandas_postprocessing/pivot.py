@@ -89,8 +89,7 @@ def pivot(  # pylint: disable=too-many-arguments
     marginal_distributions: Optional[bool] = None,
     marginal_distribution_name: Optional[str] = None,
 ) -> DataFrame:
-    """
-    Perform a pivot operation on a DataFrame.
+    """Perform a pivot operation on a DataFrame.
 
     :param df: Object on which pivot operation will be performed
     :param index: Columns to group by on the table index (=rows)

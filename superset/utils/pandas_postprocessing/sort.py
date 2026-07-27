@@ -29,8 +29,7 @@ def sort(
     by: Optional[Union[list[str], str]] = None,
     ascending: Union[list[bool], bool] = True,
 ) -> DataFrame:
-    """
-    Sort a DataFrame.
+    """Sort a DataFrame.
 
     :param df: DataFrame to sort.
     :param is_sort_index: Whether by index or value to sort

@@ -28,8 +28,7 @@ from superset.utils.pandas_postprocessing.utils import (
 def aggregate(
     df: DataFrame, groupby: list[str], aggregates: dict[str, dict[str, Any]]
 ) -> DataFrame:
-    """
-    Apply aggregations to a DataFrame.
+    """Apply aggregations to a DataFrame.
 
     :param df: Object to aggregate.
     :param groupby: columns to aggregate

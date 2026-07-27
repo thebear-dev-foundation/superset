@@ -31,8 +31,7 @@ def rename(
     inplace: bool = False,
     level: Optional[Level] = None,
 ) -> pd.DataFrame:
-    """
-    Alter column name of DataFrame
+    """Alter column name of DataFrame.
 
     :param df: DataFrame to rename.
     :param columns: The offset string representing target conversion.

@@ -39,8 +39,7 @@ def contribution(
     rename_columns: list[str] | None = None,
     contribution_totals: dict[str, float] | None = None,
 ) -> DataFrame:
-    """
-    Calculate cell contribution to row/column total for numeric columns.
+    """Calculate cell contribution to row/column total for numeric columns.
     Non-numeric columns will be kept untouched.
 
     If `columns` are specified, only calculate contributions on selected columns.
@@ -110,8 +109,7 @@ def contribution(
 def get_column_groups(
     df: DataFrame, time_shifts: list[str] | None, rename_columns: list[str]
 ) -> dict[str, Any]:
-    """
-    Group columns based on whether they have a time shift.
+    """Group columns based on whether they have a time shift.
 
     :param df: DataFrame to group columns from
     :param time_shifts: List of time shifts to group by
@@ -147,8 +145,7 @@ def get_column_groups(
 def calculate_row_contribution(
     df: DataFrame, columns: list[str], rename_columns: list[str]
 ) -> None:
-    """
-    Calculate the contribution of each column to the row total and update the DataFrame.
+    """Calculate the contribution of each column to the row total and update the DataFrame.
 
     This function calculates the contribution of each selected column to the total of the row,
     and updates the DataFrame with these contribution percentages in place of the original values.

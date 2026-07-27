@@ -34,8 +34,7 @@ def boxplot(  # noqa: C901
         Union[list[Union[int, float]], tuple[Union[int, float], Union[int, float]]]
     ] = None,
 ) -> DataFrame:
-    """
-    Calculate boxplot statistics. For each metric, the operation creates eight
+    """Calculate boxplot statistics. For each metric, the operation creates eight
     new columns with the column name suffixed with the following values:
 
     - `__mean`: the mean

@@ -29,10 +29,10 @@ def histogram(
     cumulative: bool = False,
     normalize: bool = False,
 ) -> DataFrame:
-    """
-    Generate a histogram DataFrame from a given DataFrame.
+    """Generate a histogram DataFrame from a given DataFrame.
 
-    Parameters:
+    Parameters
+    ----------
     df (DataFrame): The input DataFrame.
     column (str): The column of the DataFrame to calculate the histogram on.
     groupby (list[str]): The columns to group by. If empty, no grouping is performed.
@@ -40,11 +40,12 @@ def histogram(
     cumulative (bool): Whether to calculate a cumulative histogram. Default is False.
     normalize (bool): Whether to normalize the histogram. Default is False.
 
-    Returns:
+    Returns
+    -------
     DataFrame: A DataFrame where each row corresponds to a group (or the entire DataFrame if no grouping is performed),
                and each column corresponds to a histogram bin. The values are the counts in each bin.
-    """  # noqa: E501
 
+    """  # noqa: E501
     if groupby is None:
         groupby = []
 

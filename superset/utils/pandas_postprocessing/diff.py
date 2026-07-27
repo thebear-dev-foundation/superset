@@ -31,8 +31,7 @@ def diff(
     periods: int = 1,
     axis: PandasAxis = PandasAxis.ROW,
 ) -> DataFrame:
-    """
-    Calculate row-by-row or column-by-column difference for select columns.
+    """Calculate row-by-row or column-by-column difference for select columns.
 
     :param df: DataFrame on which the diff will be based.
     :param columns: columns on which to perform diff, mapping source column to

@@ -24,8 +24,7 @@ def rank(
     metric: str,
     group_by: str | None = None,
 ) -> pd.DataFrame:
-    """
-    Calculates the rank of a metric within a group.
+    """Calculates the rank of a metric within a group.
 
     :param df: N-dimensional DataFrame.
     :param metric: The metric to rank.

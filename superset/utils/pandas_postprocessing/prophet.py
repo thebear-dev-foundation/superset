@@ -49,9 +49,7 @@ def _prophet_fit_and_predict(  # pylint: disable=too-many-arguments
     periods: int,
     freq: str,
 ) -> DataFrame:
-    """
-    Fit a prophet model and return a DataFrame with predicted results.
-    """
+    """Fit a prophet model and return a DataFrame with predicted results."""
     try:
         # `prophet` complains about `plotly` not being installed
         with suppress_logging("prophet.plot"):
@@ -87,8 +85,7 @@ def prophet(  # pylint: disable=too-many-arguments
     daily_seasonality: Optional[Union[bool, int]] = None,
     index: Optional[str] = None,
 ) -> DataFrame:
-    """
-    Add forecasts to each series in a timeseries dataframe, along with confidence
+    """Add forecasts to each series in a timeseries dataframe, along with confidence
     intervals for the prediction. For each series, the operation creates three
     new columns with the column name suffixed with the following values:
 

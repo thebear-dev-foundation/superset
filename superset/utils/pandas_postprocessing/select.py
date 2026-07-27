@@ -28,8 +28,7 @@ def select(
     exclude: Optional[list[str]] = None,
     rename: Optional[dict[str, str]] = None,
 ) -> DataFrame:
-    """
-    Only select a subset of columns in the original dataset. Can be useful for
+    """Only select a subset of columns in the original dataset. Can be useful for
     removing unnecessary intermediate results, renaming and reordering columns.
 
     :param df: DataFrame on which the rolling period will be based.
