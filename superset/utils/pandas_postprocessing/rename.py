@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Rename post-processing operation."""
+
 from typing import Optional, Union
 
 import pandas as pd
@@ -31,8 +33,7 @@ def rename(
     inplace: bool = False,
     level: Optional[Level] = None,
 ) -> pd.DataFrame:
-    """
-    Alter column name of DataFrame
+    """Alter column name of DataFrame.
 
     :param df: DataFrame to rename.
     :param columns: The offset string representing target conversion.

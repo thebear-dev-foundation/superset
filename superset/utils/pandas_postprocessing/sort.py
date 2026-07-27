@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Sort post-processing operation."""
+
 from typing import Optional, Union
 
 from pandas import DataFrame
@@ -29,8 +31,7 @@ def sort(
     by: Optional[Union[list[str], str]] = None,
     ascending: Union[list[bool], bool] = True,
 ) -> DataFrame:
-    """
-    Sort a DataFrame.
+    """Sort a DataFrame.
 
     :param df: DataFrame to sort.
     :param is_sort_index: Whether by index or value to sort

@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Shared helpers for the pandas post-processing operations."""
+
 from collections.abc import Sequence
 from functools import partial
 from typing import Any, Callable
@@ -104,6 +106,7 @@ def _is_multi_index_on_columns(df: DataFrame) -> bool:
 
 
 def scalar_to_sequence(val: Any) -> Sequence[str]:
+    """Normalize a scalar column reference into a sequence of column names."""
     if val is None:
         return []
     if isinstance(val, str):
@@ -112,6 +115,12 @@ def scalar_to_sequence(val: Any) -> Sequence[str]:
 
 
 def validate_column_args(*argnames: str) -> Callable[..., Any]:
+    """Build a decorator validating that the named options reference known columns.
+
+    :param argnames: Names of the options holding column references.
+    :return: Decorator raising ``InvalidPostProcessingError`` on unknown columns.
+    """
+
     def wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
         def wrapped(df: DataFrame, **options: Any) -> Any:
             if _is_multi_index_on_columns(df):
@@ -137,9 +146,9 @@ def _get_aggregate_funcs(
     df: DataFrame,
     aggregates: dict[str, dict[str, Any]],
 ) -> dict[str, NamedAgg]:
-    """
-    Converts a set of aggregate config objects into functions that pandas can use as
-    aggregators. Currently only numpy aggregators are supported.
+    """Convert a set of aggregate config objects into pandas aggregator functions.
+
+    Currently only numpy aggregators are supported.
 
     :param df: DataFrame on which to perform aggregate operation.
     :param aggregates: Mapping from column name to aggregate config.
@@ -184,10 +193,10 @@ def _get_aggregate_funcs(
 def _append_columns(
     base_df: DataFrame, append_df: DataFrame, columns: dict[str, str]
 ) -> DataFrame:
-    """
-    Function for adding columns from one DataFrame to another DataFrame. Calls the
-    assign method, which overwrites the original column in `base_df` if the column
-    already exists, and appends the column if the name is not defined.
+    """Add columns from one DataFrame to another DataFrame.
+
+    Calls the assign method, which overwrites the original column in `base_df` if
+    the column already exists, and appends the column if the name is not defined.
 
     Note that! this is a memory-intensive operation.
 
@@ -211,10 +220,12 @@ def _append_columns(
 
 
 def escape_separator(plain_str: str, sep: str = FLAT_COLUMN_SEPARATOR) -> str:
+    """Escape occurrences of the flat column separator in a column name."""
     char = sep.strip()
     return plain_str.replace(char, "\\" + char)
 
 
 def unescape_separator(escaped_str: str, sep: str = FLAT_COLUMN_SEPARATOR) -> str:
+    """Reverse the escaping performed by :func:`escape_separator`."""
     char = sep.strip()
     return escaped_str.replace("\\" + char, char)

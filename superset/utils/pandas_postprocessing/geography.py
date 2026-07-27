@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Geography post-processing operations."""
+
 from typing import Optional
 
 import pygeohash as geohash_lib
@@ -28,8 +30,7 @@ from superset.utils.pandas_postprocessing.utils import _append_columns
 def geohash_decode(
     df: DataFrame, geohash: str, longitude: str, latitude: str
 ) -> DataFrame:
-    """
-    Decode a geohash column into longitude and latitude
+    """Decode a geohash column into longitude and latitude.
 
     :param df: DataFrame containing geohash data
     :param geohash: Name of source column containing geohash location.
@@ -55,8 +56,7 @@ def geohash_encode(
     longitude: str,
     latitude: str,
 ) -> DataFrame:
-    """
-    Encode longitude and latitude into geohash
+    """Encode longitude and latitude into geohash.
 
     :param df: DataFrame containing longitude and latitude data
     :param geohash: Name of new column to be created containing geohash location.
@@ -85,9 +85,9 @@ def geodetic_parse(
     latitude: str,
     altitude: Optional[str] = None,
 ) -> DataFrame:
-    """
-    Parse a column containing a geodetic point string
-    [Geopy](https://geopy.readthedocs.io/en/stable/#geopy.point.Point).
+    """Parse a column containing a geodetic point string.
+
+    See [Geopy](https://geopy.readthedocs.io/en/stable/#geopy.point.Point).
 
     :param df: DataFrame containing geodetic point data
     :param geodetic: Name of source column containing geodetic point string.
@@ -98,10 +98,7 @@ def geodetic_parse(
     """
 
     def _parse_location(location: str) -> tuple[float, float, float]:
-        """
-        Parse a string containing a geodetic point and return latitude, longitude
-        and altitude
-        """
+        """Parse a geodetic point string into latitude, longitude and altitude."""
         point = Point(location)
         return point[0], point[1], point[2]
 

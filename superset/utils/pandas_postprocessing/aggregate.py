@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Aggregate post-processing operation."""
+
 from typing import Any
 
 from pandas import DataFrame
@@ -28,8 +30,7 @@ from superset.utils.pandas_postprocessing.utils import (
 def aggregate(
     df: DataFrame, groupby: list[str], aggregates: dict[str, dict[str, Any]]
 ) -> DataFrame:
-    """
-    Apply aggregations to a DataFrame.
+    """Apply aggregations to a DataFrame.
 
     :param df: Object to aggregate.
     :param groupby: columns to aggregate

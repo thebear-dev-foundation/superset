@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Cumulative post-processing operation."""
 
 from flask_babel import gettext as _
 from pandas import DataFrame
@@ -32,8 +33,7 @@ def cum(
     operator: str,
     columns: dict[str, str],
 ) -> DataFrame:
-    """
-    Calculate cumulative sum/product/min/max for select columns.
+    """Calculate cumulative sum/product/min/max for select columns.
 
     :param df: DataFrame on which the cumulative operation will be based.
     :param columns: columns on which to perform a cumulative operation, mapping source

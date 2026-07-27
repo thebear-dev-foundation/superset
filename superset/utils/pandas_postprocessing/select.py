@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Select post-processing operation."""
+
 from typing import Optional
 
 from pandas import DataFrame
@@ -28,9 +30,10 @@ def select(
     exclude: Optional[list[str]] = None,
     rename: Optional[dict[str, str]] = None,
 ) -> DataFrame:
-    """
-    Only select a subset of columns in the original dataset. Can be useful for
-    removing unnecessary intermediate results, renaming and reordering columns.
+    """Only select a subset of columns in the original dataset.
+
+    Can be useful for removing unnecessary intermediate results, renaming and
+    reordering columns.
 
     :param df: DataFrame on which the rolling period will be based.
     :param columns: Columns which to select from the DataFrame, in the desired order.

@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Resample post-processing operation."""
+
 from typing import Optional, Union
 
 import pandas as pd
@@ -29,8 +31,7 @@ def resample(
     method: str,
     fill_value: Optional[Union[float, int]] = None,
 ) -> pd.DataFrame:
-    """
-    support upsampling in resample
+    """Support upsampling in resample.
 
     :param df: DataFrame to resample.
     :param rule: The offset string representing target conversion.

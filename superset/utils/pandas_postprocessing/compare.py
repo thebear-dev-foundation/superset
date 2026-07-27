@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Compare post-processing operation."""
+
 from typing import Optional
 
 import pandas as pd
@@ -35,8 +37,7 @@ def compare(  # pylint: disable=too-many-arguments
     drop_original_columns: Optional[bool] = False,
     precision: Optional[int] = 4,
 ) -> DataFrame:
-    """
-    Calculate column-by-column changing for select columns.
+    """Calculate column-by-column changing for select columns.
 
     :param df: DataFrame on which the compare will be based.
     :param source_columns: Main query columns

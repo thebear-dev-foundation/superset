@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Pivot post-processing operation."""
+
 from typing import Any, Optional
 
 from flask_babel import gettext as _
@@ -89,8 +91,7 @@ def pivot(  # pylint: disable=too-many-arguments
     marginal_distributions: Optional[bool] = None,
     marginal_distribution_name: Optional[str] = None,
 ) -> DataFrame:
-    """
-    Perform a pivot operation on a DataFrame.
+    """Perform a pivot operation on a DataFrame.
 
     :param df: Object on which pivot operation will be performed
     :param index: Columns to group by on the table index (=rows)

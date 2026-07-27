@@ -14,6 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Post-processing operations applied to pandas DataFrames."""
+
 from superset.utils.pandas_postprocessing.aggregate import aggregate
 from superset.utils.pandas_postprocessing.boxplot import boxplot
 from superset.utils.pandas_postprocessing.compare import compare

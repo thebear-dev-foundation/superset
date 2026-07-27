@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Flatten post-processing operation."""
 
 from collections.abc import Iterable, Sequence
 from typing import Any, Union
@@ -28,6 +29,7 @@ from superset.utils.pandas_postprocessing.utils import (
 
 
 def is_sequence(seq: Any) -> bool:
+    """Return whether the value is a non-string iterable."""
     if isinstance(seq, str):
         return False
 
@@ -39,8 +41,7 @@ def flatten(
     reset_index: bool = True,
     drop_levels: Union[Sequence[int], Sequence[str]] = (),
 ) -> pd.DataFrame:
-    """
-    Convert N-dimensional DataFrame to a flat DataFrame
+    """Convert N-dimensional DataFrame to a flat DataFrame.
 
     :param df: N-dimensional DataFrame.
     :param reset_index: Convert index to column when df.index isn't RangeIndex
@@ -49,8 +50,7 @@ def flatten(
     :return: a flat DataFrame
 
     Examples
-    -----------
-
+    --------
     Convert DatetimeIndex into columns.
 
     >>> index = pd.to_datetime(["2021-01-01", "2021-01-02", "2021-01-03",])
@@ -86,6 +86,7 @@ def flatten(
     0  2021-01-01        1        1        1        1
     1  2021-01-02        1        1        1        1
     2  2021-01-03        1        1        1        1
+
     """
     if _is_multi_index_on_columns(df):
         df.columns = df.columns.droplevel(drop_levels)
